@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova Era Srl — Ambiente, Rifiuti, Innovazione</title>
+<meta name="description" content="Nova Era Srl: raccolta e trasporto rifiuti, consulenza ambientale a 360°. Soluzioni professionali per aziende, enti pubblici e cantieri.">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="preloader" aria-hidden="true">
+  <div class="preloader-inner">
+    <svg class="preloader-logo" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#69d1ca" stroke-width="3" stroke-dasharray="264" stroke-dashoffset="264"/>
+    </svg>
+    <span>NOVA ERA</span>
+  </div>
+</div>
+
+<div class="noise-overlay" aria-hidden="true"></div>
+
+<header class="site-header" id="siteHeader">
+  <div class="container header-inner">
+    <a href="#top" class="brand" aria-label="Nova Era Srl - Home">
+      <svg class="brand-mark" viewBox="0 0 48 48" width="36" height="36" aria-hidden="true">
+        <polygon points="24,3 43,14 43,34 24,45 5,34 5,14" fill="none" stroke="#69d1ca" stroke-width="2.2"/>
+        <path d="M24 12 L33 24 L24 36 L15 24 Z" fill="#69d1ca" opacity="0.9"/>
+      </svg>
+      <span class="brand-text">NOVA<em>ERA</em></span>
+    </a>
+
+    <nav class="main-nav" id="mainNav" aria-label="Navigazione principale">
+      <ul>
+        <li><a href="#chi-siamo">Chi Siamo</a></li>
+        <li><a href="#servizi">Servizi</a></li>
+        <li><a href="#processo">Metodo</a></li>
+        <li><a href="#settori">Settori</a></li>
+        <li><a href="#contatti" class="nav-cta">Contattaci</a></li>
+      </ul>
+    </nav>
+
+    <button class="nav-toggle" id="navToggle" aria-label="Apri il menu" aria-expanded="false" aria-controls="mainNav">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <canvas id="hero-canvas" aria-hidden="true"></canvas>
+    <div class="hero-gradient" aria-hidden="true"></div>
+    <div class="container hero-content">
+      <p class="eyebrow reveal-up"><span class="dot"></span> Raccolta rifiuti &amp; consulenza ambientale</p>
+      <h1 class="hero-title reveal-up" style="--d:0.08s">
+        Costruiamo il <span class="text-accent">nuovo standard</span><br> della sostenibilità ambientale
+      </h1>
+      <p class="hero-sub reveal-up" style="--d:0.16s">
+        Nova Era Srl affianca aziende, enti pubblici e cantieri nella gestione completa del ciclo dei rifiuti
+        e nella consulenza ambientale a 360°: competenza tecnica, tecnologia e responsabilità in ogni fase.
+      </p>
+      <div class="hero-actions reveal-up" style="--d:0.24s">
+        <a href="#servizi" class="btn btn-primary">
+          <span>Scopri i servizi</span>
+          <svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#contatti" class="btn btn-ghost">Richiedi una consulenza</a>
+      </div>
+    </div>
+    <div class="scroll-cue reveal-up" style="--d:0.4s">
+      <span></span>
+      <p>Scorri</p>
+    </div>
+  </section>
+
+  <!-- MARQUEE STRIP -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>Raccolta Rifiuti</span><span>•</span><span>Trasporto Conto Terzi</span><span>•</span>
+      <span>Consulenza Ambientale</span><span>•</span><span>Gestione Pratiche AUA</span><span>•</span>
+      <span>Classificazione Rifiuti</span><span>•</span><span>Bonifiche</span><span>•</span>
+      <span>Formazione &amp; Sicurezza</span><span>•</span><span>Economia Circolare</span><span>•</span>
+      <span>Raccolta Rifiuti</span><span>•</span><span>Trasporto Conto Terzi</span><span>•</span>
+      <span>Consulenza Ambientale</span><span>•</span><span>Gestione Pratiche AUA</span><span>•</span>
+      <span>Classificazione Rifiuti</span><span>•</span><span>Bonifiche</span><span>•</span>
+      <span>Formazione &amp; Sicurezza</span><span>•</span><span>Economia Circolare</span><span>•</span>
+    </div>
+  </div>
+
+  <!-- CHI SIAMO -->
+  <section class="section about" id="chi-siamo">
+    <div class="container about-grid">
+      <div class="about-visual reveal-up">
+        <div class="tilt-card orb-card" data-tilt>
+          <div class="orb-card-inner">
+            <div class="orb" id="aboutOrb"></div>
+            <div class="orb-ring r1"></div>
+            <div class="orb-ring r2"></div>
+            <div class="orb-ring r3"></div>
+          </div>
+          <div class="glass-badge">
+            <strong>+15</strong>
+            <span>anni di esperienza</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-text">
+        <p class="section-tag reveal-up">Chi Siamo</p>
+        <h2 class="section-title reveal-up" style="--d:0.06s">
+          Un partner ambientale affidabile, <span class="text-accent">non solo un fornitore</span>
+        </h2>
+        <p class="reveal-up" style="--d:0.12s">
+          Nova Era Srl nasce dall'esigenza concreta di semplificare la gestione ambientale delle imprese:
+          uniamo mezzi autorizzati, personale qualificato e un approccio consulenziale per accompagnare
+          i clienti dalla raccolta dei rifiuti fino alla piena conformità normativa.
+        </p>
+        <p class="reveal-up" style="--d:0.18s">
+          Lavoriamo con aziende industriali, attività commerciali, enti pubblici e cantieri edili,
+          offrendo soluzioni su misura che riducono i rischi, i costi e l'impatto ambientale della
+          nostra attività quotidiana.
+        </p>
+
+        <ul class="value-list">
+          <li class="reveal-up" style="--d:0.22s">
+            <span class="value-icon">01</span>
+            <div><strong>Affidabilità</strong><p>Mezzi propri, tracciabilità completa e rispetto rigoroso dei tempi concordati.</p></div>
+          </li>
+          <li class="reveal-up" style="--d:0.28s">
+            <span class="value-icon">02</span>
+            <div><strong>Competenza tecnica</strong><p>Team specializzato in normativa ambientale, classificazione e gestione rifiuti.</p></div>
+          </li>
+          <li class="reveal-up" style="--d:0.34s">
+            <span class="value-icon">03</span>
+            <div><strong>Sostenibilità</strong><p>Ogni soluzione è pensata per massimizzare recupero e riciclo, minimizzando lo smaltimento.</p></div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats-band">
+    <div class="container stats-grid">
+      <div class="stat reveal-up">
+        <span class="stat-number" data-count="15" data-suffix="+">0</span>
+        <span class="stat-label">Anni di esperienza</span>
+      </div>
+      <div class="stat reveal-up" style="--d:0.08s">
+        <span class="stat-number" data-count="320" data-suffix="+">0</span>
+        <span class="stat-label">Clienti serviti</span>
+      </div>
+      <div class="stat reveal-up" style="--d:0.16s">
+        <span class="stat-number" data-count="98" data-suffix="%">0</span>
+        <span class="stat-label">Rifiuti avviati a recupero</span>
+      </div>
+      <div class="stat reveal-up" style="--d:0.24s">
+        <span class="stat-number" data-count="24" data-suffix="/7">0</span>
+        <span class="stat-label">Reperibilità operativa</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVIZI -->
+  <section class="section services" id="servizi">
+    <div class="container">
+      <div class="section-head">
+        <p class="section-tag reveal-up">Servizi</p>
+        <h2 class="section-title reveal-up" style="--d:0.06s">
+          Consulenza ambientale <span class="text-accent">a 360°</span>
+        </h2>
+        <p class="section-lead reveal-up" style="--d:0.12s">
+          Dalla raccolta alla piena conformità normativa: un'unica squadra per gestire ogni aspetto
+          del ciclo dei rifiuti della tua attività.
+        </p>
+      </div>
+
+      <div class="services-grid">
+
+        <article class="service-card tilt-card reveal-up" data-tilt>
+          <div class="service-icon">
+            <svg viewBox="0 0 40 40" width="30" height="30"><path d="M20 4l14 8v16l-14 8-14-8V12z" fill="none" stroke="#69d1ca" stroke-width="2"/><path d="M20 4v16M20 20l14-8M20 20L6 12M20 20v16" stroke="#69d1ca" stroke-width="1.4" opacity=".6"/></svg>
+          </div>
+          <h3>Raccolta &amp; Trasporto Rifiuti</h3>
+          <p>Raccolta di rifiuti urbani, speciali e pericolosi con mezzi autorizzati e tracciabilità completa dal conferimento allo smaltimento finale.</p>
+          <span class="service-index">01</span>
+        </article>
+
+        <article class="service-card tilt-card reveal-up" data-tilt style="--d:0.06s">
+          <div class="service-icon">
+            <svg viewBox="0 0 40 40" width="30" height="30"><circle cx="20" cy="20" r="15" fill="none" stroke="#69d1ca" stroke-width="2"/><path d="M20 11v9l6 4" stroke="#69d1ca" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Consulenza Ambientale</h3>
+          <p>Analisi normativa, audit di conformità e supporto strategico per la gestione ambientale integrata della tua impresa.</p>
+          <span class="service-index">02</span>
+        </article>
+
+        <article class="service-card tilt-card reveal-up" data-tilt style="--d:0.12s">
+          <div class="service-icon">
+            <svg viewBox="0 0 40 40" width="30" height="30"><rect x="7" y="10" width="26" height="20" rx="2" fill="none" stroke="#69d1ca" stroke-width="2"/><path d="M12 17h16M12 22h10" stroke="#69d1ca" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Pratiche Autorizzative</h3>
+          <p>Gestione di AUA, iscrizioni all'Albo Gestori Ambientali e rapporti con gli enti di controllo per la tua piena regolarità.</p>
+          <span class="service-index">03</span>
+        </article>
+
+        <article class="service-card tilt-card reveal-up" data-tilt style="--d:0.18s">
+          <div class="service-icon">
+            <svg viewBox="0 0 40 40" width="30" height="30"><path d="M8 28l8-16 8 10 4-6 4 12z" fill="none" stroke="#69d1ca" stroke-width="2" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>Classificazione Rifiuti</h3>
+          <p>Caratterizzazione, campionamento e classificazione dei rifiuti secondo codice CER, con supporto analitico dedicato.</p>
+          <span class="service-index">04</span>
+        </article>
+
+        <article class="service-card tilt-card reveal-up" data-tilt style="--d:0.24s">
+          <div class="service-icon">
+            <svg viewBox="0 0 40 40" width="30" height="30"><path d="M20 5c6 5 11 10 11 16a11 11 0 0 1-22 0c0-6 5-11 11-16z" fill="none" stroke="#69d1ca" stroke-width="2"/></svg>
+          </div>
+          <h3>Bonifiche &amp; Smaltimento</h3>
+          <p>Interventi di bonifica ambientale e smaltimento controllato in siti autorizzati, nel pieno rispetto della normativa vigente.</p>
+          <span class="service-index">05</span>
+        </article>
+
+        <article class="service-card tilt-card reveal-up" data-tilt style="--d:0.3s">
+          <div class="service-icon">
+            <svg viewBox="0 0 40 40" width="30" height="30"><circle cx="20" cy="14" r="6" fill="none" stroke="#69d1ca" stroke-width="2"/><path d="M9 33c0-7 5-11 11-11s11 4 11 11" fill="none" stroke="#69d1ca" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Formazione &amp; Sicurezza</h3>
+          <p>Corsi di formazione ambientale e sulla sicurezza, per rendere il tuo personale autonomo e conforme agli obblighi di legge.</p>
+          <span class="service-index">06</span>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESSO -->
+  <section class="section process" id="processo">
+    <div class="container">
+      <div class="section-head">
+        <p class="section-tag reveal-up">Il Metodo Nova Era</p>
+        <h2 class="section-title reveal-up" style="--d:0.06s">Come lavoriamo, <span class="text-accent">passo dopo passo</span></h2>
+      </div>
+
+      <div class="process-track">
+        <div class="process-line" aria-hidden="true"><span id="processProgress"></span></div>
+
+        <div class="process-step reveal-up">
+          <span class="process-num">01</span>
+          <h3>Sopralluogo &amp; Analisi</h3>
+          <p>Valutiamo il ciclo produttivo e i rifiuti generati per individuare la soluzione più efficiente.</p>
+        </div>
+        <div class="process-step reveal-up" style="--d:0.1s">
+          <span class="process-num">02</span>
+          <h3>Progetto su Misura</h3>
+          <p>Definiamo tempistiche, mezzi e procedure, in piena conformità con la normativa ambientale.</p>
+        </div>
+        <div class="process-step reveal-up" style="--d:0.2s">
+          <span class="process-num">03</span>
+          <h3>Esecuzione</h3>
+          <p>Raccolta, trasporto e gestione documentale eseguiti da personale qualificato e mezzi autorizzati.</p>
+        </div>
+        <div class="process-step reveal-up" style="--d:0.3s">
+          <span class="process-num">04</span>
+          <h3>Monitoraggio Continuo</h3>
+          <p>Reportistica periodica e aggiornamento normativo per mantenere l'azienda sempre in regola.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTORI -->
+  <section class="section sectors" id="settori">
+    <div class="container">
+      <div class="section-head">
+        <p class="section-tag reveal-up">Settori Serviti</p>
+        <h2 class="section-title reveal-up" style="--d:0.06s">Al fianco di chi <span class="text-accent">costruisce e produce</span></h2>
+      </div>
+
+      <div class="sectors-grid">
+        <div class="sector-card reveal-up">
+          <span class="sector-num">A</span>
+          <h4>Aziende Industriali</h4>
+          <p>Gestione rifiuti speciali derivanti da processi produttivi e di lavorazione.</p>
+        </div>
+        <div class="sector-card reveal-up" style="--d:0.08s">
+          <span class="sector-num">B</span>
+          <h4>Enti Pubblici</h4>
+          <p>Servizi ambientali integrati per amministrazioni e strutture pubbliche.</p>
+        </div>
+        <div class="sector-card reveal-up" style="--d:0.16s">
+          <span class="sector-num">C</span>
+          <h4>Cantieri Edili</h4>
+          <p>Raccolta e smaltimento di materiali da demolizione, scavo e costruzione.</p>
+        </div>
+        <div class="sector-card reveal-up" style="--d:0.24s">
+          <span class="sector-num">D</span>
+          <h4>Attività Commerciali</h4>
+          <p>Soluzioni flessibili per negozi, uffici e attività di servizio.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <canvas id="cta-canvas" aria-hidden="true"></canvas>
+    <div class="container cta-inner">
+      <h2 class="reveal-up">Pronto a rendere la tua azienda <span class="text-accent">più sostenibile?</span></h2>
+      <p class="reveal-up" style="--d:0.08s">Parliamo del tuo progetto: un nostro tecnico ti risponderà entro 24 ore lavorative.</p>
+      <a href="#contatti" class="btn btn-primary reveal-up" style="--d:0.16s">
+        <span>Richiedi un preventivo</span>
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- CONTATTI -->
+  <section class="section contact" id="contatti">
+    <div class="container contact-grid">
+      <div class="contact-info">
+        <p class="section-tag reveal-up">Contatti</p>
+        <h2 class="section-title reveal-up" style="--d:0.06s">Parliamo del tuo <span class="text-accent">progetto ambientale</span></h2>
+        <p class="reveal-up" style="--d:0.12s">Compila il form o contattaci direttamente: ti risponderemo il prima possibile con una proposta su misura.</p>
+
+        <ul class="contact-list reveal-up" style="--d:0.18s">
+          <li>
+            <span class="contact-icon">✉</span>
+            <div><strong>Email</strong><a href="mailto:info@novaerasrl.com">info@novaerasrl.com</a></div>
+          </li>
+          <li>
+            <span class="contact-icon">☎</span>
+            <div><strong>Telefono</strong><a href="tel:+390000000000">+39 000 000 0000</a></div>
+          </li>
+          <li>
+            <span class="contact-icon">⌖</span>
+            <div><strong>Sede</strong><span>Via dell'Ambiente, 00000 — Italia</span></div>
+          </li>
+        </ul>
+      </div>
+
+      <form class="contact-form reveal-up" style="--d:0.1s" id="contactForm">
+        <div class="form-row">
+          <div class="form-field">
+            <label for="name">Nome e cognome</label>
+            <input type="text" id="name" name="name" required placeholder="Mario Rossi">
+          </div>
+          <div class="form-field">
+            <label for="company">Azienda</label>
+            <input type="text" id="company" name="company" placeholder="Nome azienda">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required placeholder="mario@azienda.it">
+          </div>
+          <div class="form-field">
+            <label for="phone">Telefono</label>
+            <input type="tel" id="phone" name="phone" placeholder="+39 000 000 0000">
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="message">Messaggio</label>
+          <textarea id="message" name="message" rows="4" required placeholder="Descrivi brevemente la tua esigenza..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <span>Invia richiesta</span>
+          <svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <p class="form-note" id="formNote" role="status"></p>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <a href="#top" class="brand">
+        <svg class="brand-mark" viewBox="0 0 48 48" width="30" height="30" aria-hidden="true">
+          <polygon points="24,3 43,14 43,34 24,45 5,34 5,14" fill="none" stroke="#69d1ca" stroke-width="2.2"/>
+          <path d="M24 12 L33 24 L24 36 L15 24 Z" fill="#69d1ca" opacity="0.9"/>
+        </svg>
+        <span class="brand-text">NOVA<em>ERA</em></span>
+      </a>
+      <p>Raccolta rifiuti e consulenza ambientale a 360° per aziende, enti pubblici e cantieri.</p>
+    </div>
+
+    <div class="footer-col">
+      <h5>Naviga</h5>
+      <a href="#chi-siamo">Chi Siamo</a>
+      <a href="#servizi">Servizi</a>
+      <a href="#processo">Metodo</a>
+      <a href="#settori">Settori</a>
+    </div>
+
+    <div class="footer-col">
+      <h5>Contatti</h5>
+      <a href="mailto:info@novaerasrl.com">info@novaerasrl.com</a>
+      <a href="tel:+390000000000">+39 000 000 0000</a>
+      <span>Via dell'Ambiente, 00000 — Italia</span>
+    </div>
+
+    <div class="footer-col">
+      <h5>Legale</h5>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Cookie Policy</a>
+      <a href="#">P.IVA 00000000000</a>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <p>© <span id="year"></span> Nova Era Srl — Tutti i diritti riservati.</p>
+  </div>
+</footer>
+
+<a href="#top" class="back-to-top" id="backToTop" aria-label="Torna in cima">
+  <svg width="18" height="18" viewBox="0 0 16 16"><path d="M8 12V4M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</a>
+
+<script type="module" src="js/three-scene.js"></script>
+<script src="js/main.js" defer></script>
+</body>
+</html>
