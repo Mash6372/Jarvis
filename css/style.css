@@ -573,7 +573,8 @@ img { max-width: 100%; display: block; }
   gap: 70px;
 }
 .contact-list { margin-top: 32px; display: flex; flex-direction: column; gap: 20px; }
-.contact-list li { display: flex; align-items: center; gap: 16px; }
+.contact-list li { display: flex; align-items: flex-start; gap: 16px; }
+.contact-list .contact-icon { margin-top: 2px; }
 .contact-icon {
   width: 44px; height: 44px;
   border-radius: 12px;
@@ -632,6 +633,12 @@ img { max-width: 100%; display: block; }
 .footer-col h5 { color: var(--text-hi); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
 .footer-col a, .footer-col span { color: var(--text-low); font-size: 0.9rem; transition: color 0.25s; }
 .footer-col a:hover { color: var(--accent); }
+.footer-certs {
+  border-top: 1px solid var(--line);
+  padding: 22px 0;
+  text-align: center;
+}
+.footer-certs p { margin: 0; font-size: 0.8rem; color: var(--text-low); }
 .footer-bottom {
   border-top: 1px solid var(--line);
   padding: 24px 0;
