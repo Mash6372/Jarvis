@@ -571,6 +571,7 @@ void PanelSetLabel(const string name, const int x, const int y, const string tex
       ObjectSetString(0, name, OBJPROP_FONT, "Consolas");
       ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
       ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
+      ObjectSetInteger(0, name, OBJPROP_ZORDER, 5);
      }
    ObjectSetString(0, name, OBJPROP_TEXT, text);
    ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
@@ -597,6 +598,7 @@ void PanelSetEdit(const string name, const int x, const int y, const int w, cons
       ObjectSetInteger(0, name, OBJPROP_ALIGN, ALIGN_CENTER);
       ObjectSetInteger(0, name, OBJPROP_SELECTABLE, true);
       ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
+      ObjectSetInteger(0, name, OBJPROP_ZORDER, 10);
       ObjectSetString(0, name, OBJPROP_TEXT, defaultText);
      }
   }
@@ -618,6 +620,7 @@ void PanelSetButton(const string name, const int x, const int y, const int w, co
       ObjectSetInteger(0, name, OBJPROP_COLOR, clrWhite);
       ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
       ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
+      ObjectSetInteger(0, name, OBJPROP_ZORDER, 10);
      }
    ObjectSetString(0, name, OBJPROP_TEXT, text);
    ObjectSetInteger(0, name, OBJPROP_BGCOLOR, bg);
@@ -752,6 +755,7 @@ void CreatePanel()
    ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, y - SC(6));
    ObjectSetInteger(0, bg, OBJPROP_XSIZE, SC(300));
    ObjectSetInteger(0, bg, OBJPROP_YSIZE, SC(460));
+   ObjectSetInteger(0, bg, OBJPROP_ZORDER, 0);
    ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, C'20,20,20');
    ObjectSetInteger(0, bg, OBJPROP_BORDER_TYPE, BORDER_FLAT);
    ObjectSetInteger(0, bg, OBJPROP_COLOR, clrSilver);
