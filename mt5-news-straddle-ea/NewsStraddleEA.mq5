@@ -2,7 +2,8 @@
 //|                                           NewsStraddleEA.mq5      |
 //|  Strategia "straddle" per news ad alto impatto (NFP, FOMC, ecc.) |
 //|                                                                    |
-//|  Per ogni evento programmato, l'EA:                               |
+//|  Per ogni evento (trovato in automatico nel Calendario Economico  |
+//|  di MT5, oppure inserito a mano), l'EA:                           |
 //|   1) tiene sotto osservazione le ultime N candele M5 precedenti   |
 //|      l'orario della notizia (default: 10 minuti = 2 candele),     |
 //|      aggiornando in tempo reale massimo e minimo raggiunti;       |
@@ -15,25 +16,37 @@
 //|      notizia, cancella entrambi gli ordini pendenti.              |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "1.00"
+#property version   "2.00"
 #property strict
 
 #include <Trade\Trade.mqh>
 
 //================================= INPUT ==================================
 
-input group "=== NFP (esce sempre alle 14:30 ora italiana) ==="
-input bool   InpEnableNFP            = true; // Abilita gli eventi NFP
-input string InpNFPDates             = "2026.09.04, 2026.10.02, 2026.11.06, 2026.12.04"; // Date NFP (solo giorno, formato YYYY.MM.DD, separate da virgola)
-input string InpNFPTimeItaly         = "14:30"; // Orario italiano di uscita NFP (HH:MM)
+input group "=== Modalita' ==="
+input bool   InpAutoFetchFromCalendar = true;  // true = prende le date da NFP/FOMC in automatico dal Calendario Economico di MT5
+input bool   InpListUSEventsOnInit   = false;  // true = stampa nel log tutti gli eventi USA del calendario (utile per trovare la keyword esatta)
 
-input group "=== FOMC (esce sempre alle 20:00 ora italiana) ==="
-input bool   InpEnableFOMC           = true; // Abilita gli eventi FOMC
-input string InpFOMCDates            = "2026.09.17, 2026.11.05, 2026.12.17"; // Date FOMC (solo giorno, formato YYYY.MM.DD, separate da virgola)
-input string InpFOMCTimeItaly        = "20:00"; // Orario italiano di uscita FOMC (HH:MM)
+input group "=== NFP ==="
+input bool   InpEnableNFP            = true;   // Abilita gli eventi NFP
+input string InpNFPCountryCode       = "US";   // Codice paese nel Calendario Economico
+input string InpNFPKeyword           = "Nonfarm Payrolls"; // Parola chiave nel nome evento (solo modalita' automatica)
+input string InpNFPDatesManual       = "2026.09.04, 2026.10.02, 2026.11.06, 2026.12.04"; // Date NFP, solo se InpAutoFetchFromCalendar=false
+input string InpNFPTimeItaly         = "14:30"; // Orario italiano NFP, solo modalita' manuale
 
-input group "=== Fuso orario ==="
-input int    InpServerMinusItalyMin  = 60;   // Differenza in MINUTI tra orario server del broker e orario italiano (server = italia + questo valore). Verifica il tuo broker!
+input group "=== FOMC ==="
+input bool   InpEnableFOMC           = true;   // Abilita gli eventi FOMC
+input string InpFOMCCountryCode      = "US";   // Codice paese nel Calendario Economico
+input string InpFOMCKeyword          = "Interest Rate Decision"; // Parola chiave nel nome evento (solo modalita' automatica)
+input string InpFOMCDatesManual      = "2026.09.17, 2026.11.05, 2026.12.17"; // Date FOMC, solo se InpAutoFetchFromCalendar=false
+input string InpFOMCTimeItaly        = "20:00"; // Orario italiano FOMC, solo modalita' manuale
+
+input group "=== Calendario automatico ==="
+input int    InpCalendarLookaheadDays = 45;    // Giorni in avanti in cui cercare i prossimi eventi
+input int    InpCalendarRefreshHours  = 6;     // Ogni quante ore ricontrollare il calendario per nuove date
+
+input group "=== Fuso orario (solo modalita' manuale) ==="
+input int    InpServerMinusItalyMin  = 60;   // Differenza in MINUTI tra orario server del broker e orario italiano
 
 input group "=== Finestra di osservazione ==="
 input int    InpLookbackMinutes      = 10;   // Minuti da guardare prima della notizia (10 = 2 candele M5)
@@ -74,6 +87,7 @@ struct NewsEvent
 
 NewsEvent   g_events[];
 int         g_activeIndex = -1;
+datetime    g_lastCalendarRefresh = 0;
 CTrade      trade;
 
 //+------------------------------------------------------------------+
@@ -83,21 +97,20 @@ int OnInit()
    trade.SetDeviationInPoints(InpSlippagePoints);
    trade.SetTypeFillingBySymbol(_Symbol);
 
+   if(InpListUSEventsOnInit)
+      DumpCountryEvents("US");
+
    ArrayResize(g_events, 0);
-
-   if(InpEnableNFP)
-      AddEvents(InpNFPDates, InpNFPTimeItaly, "NFP");
-   if(InpEnableFOMC)
-      AddEvents(InpFOMCDates, InpFOMCTimeItaly, "FOMC");
-
-   SortEvents();
+   RefreshEvents();
+   g_lastCalendarRefresh = TimeCurrent();
 
    if(ArraySize(g_events) == 0)
      {
-      Print("NewsStraddleEA: nessun evento valido trovato (controlla InpNFPDates/InpFOMCDates).");
+      Print("NewsStraddleEA: nessun evento valido trovato. Se sei in modalita' automatica, controlla che il Calendario Economico sia attivo in MT5 (Vista -> Calendario Economico) e che le keyword siano corrette (prova InpListUSEventsOnInit=true).");
       return(INIT_PARAMETERS_INCORRECT);
      }
 
+   EventSetTimer(1);
    Print("NewsStraddleEA inizializzato con ", ArraySize(g_events), " evento/i.");
    return(INIT_SUCCEEDED);
   }
@@ -105,14 +118,126 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
+   EventKillTimer();
   }
 
 //+------------------------------------------------------------------+
-//| Aggiunge a g_events gli eventi di una categoria (NFP o FOMC):     |
-//| combina ogni data con l'orario italiano fisso e lo converte in    |
-//| orario server usando InpServerMinusItalyMin.                      |
+//| Stampa nel log tutti gli eventi di un paese, per trovare la       |
+//| keyword esatta da usare in InpNFPKeyword / InpFOMCKeyword          |
 //+------------------------------------------------------------------+
-void AddEvents(const string datesList, const string timeItaly, const string label)
+void DumpCountryEvents(const string countryCode)
+  {
+   MqlCalendarEvent events[];
+   int total = CalendarEventByCountry(countryCode, events);
+   PrintFormat("NewsStraddleEA: %d eventi trovati nel Calendario per il paese '%s':", total, countryCode);
+   for(int i = 0; i < total; i++)
+      PrintFormat("   id=%I64u  importance=%d  name='%s'", events[i].id, (int)events[i].importance, events[i].name);
+  }
+
+//+------------------------------------------------------------------+
+//| Cerca nel Calendario Economico l'evento il cui nome contiene la   |
+//| keyword indicata (case-insensitive) per il paese specificato.     |
+//+------------------------------------------------------------------+
+bool FindEventId(const string countryCode, const string keyword, ulong &eventId)
+  {
+   MqlCalendarEvent events[];
+   int total = CalendarEventByCountry(countryCode, events);
+   if(total <= 0)
+      return(false);
+
+   string kw = keyword;
+   StringToLower(kw);
+
+   for(int i = 0; i < total; i++)
+     {
+      string name = events[i].name;
+      StringToLower(name);
+      if(StringFind(name, kw) >= 0)
+        {
+         eventId = events[i].id;
+         return(true);
+        }
+     }
+   return(false);
+  }
+
+//+------------------------------------------------------------------+
+//| true se esiste gia' un evento della stessa categoria entro 12h    |
+//| dall'orario indicato (evita doppioni tra un refresh e l'altro)    |
+//+------------------------------------------------------------------+
+bool AlreadyTracked(const string label, datetime t)
+  {
+   int total = ArraySize(g_events);
+   for(int i = 0; i < total; i++)
+     {
+      if(g_events[i].label == label && MathAbs((long)(g_events[i].time - t)) < 12 * 3600)
+         return(true);
+     }
+   return(false);
+  }
+
+//+------------------------------------------------------------------+
+//| Aggiunge un evento a g_events                                     |
+//+------------------------------------------------------------------+
+void AppendEvent(const datetime serverTime, const string label)
+  {
+   int idx = ArraySize(g_events);
+   ArrayResize(g_events, idx + 1);
+   g_events[idx].time       = serverTime;
+   g_events[idx].label      = label;
+   g_events[idx].state      = STATE_WAITING;
+   g_events[idx].rangeHigh  = -1;
+   g_events[idx].rangeLow   = -1;
+   g_events[idx].rangeValid = false;
+   g_events[idx].buyTicket  = 0;
+   g_events[idx].sellTicket = 0;
+  }
+
+//+------------------------------------------------------------------+
+//| Recupera dal Calendario Economico i prossimi eventi di una        |
+//| categoria e li aggiunge a g_events (converte da GMT a orario      |
+//| server del broker automaticamente, senza bisogno di input manuali)|
+//+------------------------------------------------------------------+
+void RefreshCategoryFromCalendar(const string countryCode, const string keyword, const string label)
+  {
+   ulong eventId;
+   if(!FindEventId(countryCode, keyword, eventId))
+     {
+      PrintFormat("NewsStraddleEA [%s]: nessun evento trovato nel Calendario con keyword '%s' per il paese '%s'. Attiva InpListUSEventsOnInit per vedere i nomi disponibili.", label, keyword, countryCode);
+      return;
+     }
+
+   MqlCalendarValue values[];
+   datetime fromUTC = TimeGMT() - 3600;
+   datetime toUTC   = TimeGMT() + InpCalendarLookaheadDays * 24 * 3600;
+   int total = CalendarValueHistoryByEvent(eventId, values, fromUTC, toUTC);
+   if(total <= 0)
+     {
+      PrintFormat("NewsStraddleEA [%s]: il Calendario non ha ancora pubblicato date future per questo evento, riprovo al prossimo refresh.", label);
+      return;
+     }
+
+   long offsetSec = (long)TimeCurrent() - (long)TimeGMT();
+
+   for(int i = 0; i < total; i++)
+     {
+      datetime serverTime = values[i].time + offsetSec;
+
+      if(serverTime + InpExpirationMinutes * 60 < TimeCurrent())
+         continue; // già passato
+
+      if(AlreadyTracked(label, serverTime))
+         continue;
+
+      AppendEvent(serverTime, label);
+      PrintFormat("NewsStraddleEA [%s]: evento trovato dal Calendario -> %s (orario server)", label, TimeToString(serverTime, TIME_DATE | TIME_MINUTES));
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Aggiunge eventi inseriti a mano (modalita' manuale/fallback)      |
+//+------------------------------------------------------------------+
+void AddManualEvents(const string datesList, const string timeItaly, const string label)
   {
    string dates[];
    int n = StringSplit(datesList, ',', dates);
@@ -134,25 +259,17 @@ void AddEvents(const string datesList, const string timeItaly, const string labe
 
       datetime serverTime = italyTime + InpServerMinusItalyMin * 60;
 
-      // scarta eventi già passati oltre la finestra di scadenza
       if(serverTime + InpExpirationMinutes * 60 < TimeCurrent())
         {
          Print("NewsStraddleEA [", label, "]: evento già passato ignorato: ", TimeToString(serverTime));
          continue;
         }
 
-      int idx = ArraySize(g_events);
-      ArrayResize(g_events, idx + 1);
-      g_events[idx].time       = serverTime;
-      g_events[idx].label      = label;
-      g_events[idx].state      = STATE_WAITING;
-      g_events[idx].rangeHigh  = -1;
-      g_events[idx].rangeLow   = -1;
-      g_events[idx].rangeValid = false;
-      g_events[idx].buyTicket  = 0;
-      g_events[idx].sellTicket = 0;
+      if(AlreadyTracked(label, serverTime))
+         continue;
 
-      PrintFormat("NewsStraddleEA [%s]: evento programmato -> %s (orario server)", label, TimeToString(serverTime, TIME_DATE | TIME_MINUTES));
+      AppendEvent(serverTime, label);
+      PrintFormat("NewsStraddleEA [%s]: evento manuale programmato -> %s (orario server)", label, TimeToString(serverTime, TIME_DATE | TIME_MINUTES));
      }
   }
 
@@ -173,6 +290,28 @@ void SortEvents()
         }
       g_events[j + 1] = key;
      }
+  }
+
+//+------------------------------------------------------------------+
+//| Punto unico di aggiornamento della lista eventi                   |
+//+------------------------------------------------------------------+
+void RefreshEvents()
+  {
+   if(InpAutoFetchFromCalendar)
+     {
+      if(InpEnableNFP)
+         RefreshCategoryFromCalendar(InpNFPCountryCode, InpNFPKeyword, "NFP");
+      if(InpEnableFOMC)
+         RefreshCategoryFromCalendar(InpFOMCCountryCode, InpFOMCKeyword, "FOMC");
+     }
+   else
+     {
+      if(InpEnableNFP)
+         AddManualEvents(InpNFPDatesManual, InpNFPTimeItaly, "NFP");
+      if(InpEnableFOMC)
+         AddManualEvents(InpFOMCDatesManual, InpFOMCTimeItaly, "FOMC");
+     }
+   SortEvents();
   }
 
 //+------------------------------------------------------------------+
@@ -348,14 +487,14 @@ void ManageArmedEvent(NewsEvent &ev)
      {
       trade.OrderDelete(ev.sellTicket);
       ev.state = STATE_DONE;
-      Print("NewsStraddleEA: BuyStop eseguito/rimosso, cancellato SellStop residuo.");
+      Print("NewsStraddleEA [", ev.label, "]: BuyStop eseguito/rimosso, cancellato SellStop residuo.");
       return;
      }
    if(ev.sellTicket != 0 && !sellPending && buyPending)
      {
       trade.OrderDelete(ev.buyTicket);
       ev.state = STATE_DONE;
-      Print("NewsStraddleEA: SellStop eseguito/rimosso, cancellato BuyStop residuo.");
+      Print("NewsStraddleEA [", ev.label, "]: SellStop eseguito/rimosso, cancellato BuyStop residuo.");
       return;
      }
    if(!buyPending && !sellPending)
@@ -370,18 +509,19 @@ void ManageArmedEvent(NewsEvent &ev)
       if(buyPending)  trade.OrderDelete(ev.buyTicket);
       if(sellPending) trade.OrderDelete(ev.sellTicket);
       ev.state = STATE_DONE;
-      Print("NewsStraddleEA: scaduta finestra post-notizia, ordini pendenti residui cancellati.");
+      Print("NewsStraddleEA [", ev.label, "]: scaduta finestra post-notizia, ordini pendenti residui cancellati.");
      }
   }
 
 //+------------------------------------------------------------------+
-void OnTick()
+//| Avanza la macchina a stati per l'evento attualmente attivo        |
+//+------------------------------------------------------------------+
+void ProcessEvents()
   {
    int total = ArraySize(g_events);
    if(total == 0)
       return;
 
-   // seleziona il prossimo evento non ancora concluso
    if(g_activeIndex < 0 || g_activeIndex >= total || g_events[g_activeIndex].state == STATE_DONE)
      {
       g_activeIndex = -1;
@@ -408,7 +548,7 @@ void OnTick()
         {
          UpdateRange(ev);
         }
-      else if(secToNews > -60) // margine di tolleranza se il tick arriva in ritardo
+      else if(secToNews > -60) // margine di tolleranza se il timer/tick arriva in ritardo
         {
          UpdateRange(ev); // ultimo aggiornamento prima di congelare il range
          PlaceOrders(ev);
@@ -425,5 +565,22 @@ void OnTick()
      }
 
    g_events[g_activeIndex] = ev;
+  }
+
+//+------------------------------------------------------------------+
+void OnTimer()
+  {
+   if(InpAutoFetchFromCalendar && TimeCurrent() - g_lastCalendarRefresh >= InpCalendarRefreshHours * 3600)
+     {
+      RefreshEvents();
+      g_lastCalendarRefresh = TimeCurrent();
+     }
+   ProcessEvents();
+  }
+
+//+------------------------------------------------------------------+
+void OnTick()
+  {
+   ProcessEvents();
   }
 //+------------------------------------------------------------------+
