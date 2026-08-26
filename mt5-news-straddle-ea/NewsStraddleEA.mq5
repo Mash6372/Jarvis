@@ -64,7 +64,15 @@ input ulong  InpMagicNumber          = 20260825; // Magic number
 input group "=== Sicurezza ==="
 input bool   InpEnableTrading        = true; // false = simulazione: calcola i livelli ma non invia ordini reali
 
+input group "=== Pannello su grafico ==="
+input bool   InpShowPanel            = true; // Mostra il pannello di stato/controllo sul grafico
+input int    InpPanelX               = 10;   // Posizione orizzontale del pannello (pixel dal bordo)
+input int    InpPanelY               = 20;   // Posizione verticale del pannello (pixel dal bordo)
+
 //================================ STATO =====================================
+
+#define PANEL_LINE_H 16
+#define PANEL_FONT   8
 
 enum EventState
   {
@@ -88,6 +96,8 @@ struct NewsEvent
 NewsEvent   g_events[];
 int         g_activeIndex = -1;
 datetime    g_lastCalendarRefresh = 0;
+bool        g_tradingEnabledRuntime = true;
+string      g_panelPrefix = "NSE_";
 CTrade      trade;
 
 //+------------------------------------------------------------------+
@@ -96,6 +106,8 @@ int OnInit()
    trade.SetExpertMagicNumber(InpMagicNumber);
    trade.SetDeviationInPoints(InpSlippagePoints);
    trade.SetTypeFillingBySymbol(_Symbol);
+
+   g_tradingEnabledRuntime = InpEnableTrading;
 
    if(InpListUSEventsOnInit)
       DumpCountryEvents("US");
@@ -111,6 +123,7 @@ int OnInit()
      }
 
    EventSetTimer(1);
+   CreatePanel();
    Print("NewsStraddleEA inizializzato con ", ArraySize(g_events), " evento/i.");
    return(INIT_SUCCEEDED);
   }
@@ -119,6 +132,7 @@ int OnInit()
 void OnDeinit(const int reason)
   {
    EventKillTimer();
+   DestroyPanel();
   }
 
 //+------------------------------------------------------------------+
@@ -441,9 +455,9 @@ void PlaceOrders(NewsEvent &ev)
                ev.label, TimeToString(ev.time), DoubleToString(ev.rangeLow, digits), DoubleToString(ev.rangeHigh, digits),
                DoubleToString(buyPrice, digits), DoubleToString(sellPrice, digits));
 
-   if(!InpEnableTrading)
+   if(!g_tradingEnabledRuntime)
      {
-      Print("NewsStraddleEA: InpEnableTrading=false, ordini NON inviati (modalita' simulazione).");
+      Print("NewsStraddleEA: trading disabilitato (input o pulsante pannello), ordini NON inviati (modalita' simulazione).");
       ev.state = STATE_DONE;
       return;
      }
@@ -568,6 +582,253 @@ void ProcessEvents()
   }
 
 //+------------------------------------------------------------------+
+//| Crea/aggiorna un'etichetta di testo del pannello                  |
+//+------------------------------------------------------------------+
+void PanelSetLabel(const string name, const int x, const int y, const string text, const color clr)
+  {
+   if(ObjectFind(0, name) < 0)
+     {
+      ObjectCreate(0, name, OBJ_LABEL, 0, 0, 0);
+      ObjectSetInteger(0, name, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+      ObjectSetInteger(0, name, OBJPROP_XDISTANCE, x);
+      ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
+      ObjectSetInteger(0, name, OBJPROP_FONTSIZE, PANEL_FONT);
+      ObjectSetString(0, name, OBJPROP_FONT, "Consolas");
+      ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
+      ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
+     }
+   ObjectSetString(0, name, OBJPROP_TEXT, text);
+   ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
+  }
+
+//+------------------------------------------------------------------+
+//| Crea/aggiorna un pulsante del pannello                            |
+//+------------------------------------------------------------------+
+void PanelSetButton(const string name, const int x, const int y, const int w, const int h, const string text, const color bg)
+  {
+   if(ObjectFind(0, name) < 0)
+     {
+      ObjectCreate(0, name, OBJ_BUTTON, 0, 0, 0);
+      ObjectSetInteger(0, name, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+      ObjectSetInteger(0, name, OBJPROP_XDISTANCE, x);
+      ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
+      ObjectSetInteger(0, name, OBJPROP_XSIZE, w);
+      ObjectSetInteger(0, name, OBJPROP_YSIZE, h);
+      ObjectSetInteger(0, name, OBJPROP_FONTSIZE, PANEL_FONT);
+      ObjectSetInteger(0, name, OBJPROP_COLOR, clrWhite);
+      ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
+      ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
+     }
+   ObjectSetString(0, name, OBJPROP_TEXT, text);
+   ObjectSetInteger(0, name, OBJPROP_BGCOLOR, bg);
+  }
+
+//+------------------------------------------------------------------+
+//| Formatta un conto alla rovescia in giorni/ore/minuti/secondi      |
+//+------------------------------------------------------------------+
+string FormatCountdown(long secs)
+  {
+   if(secs < 0)
+      secs = 0;
+   long d = secs / 86400; secs %= 86400;
+   long h = secs / 3600;  secs %= 3600;
+   long m = secs / 60;    secs %= 60;
+   long s = secs;
+   return StringFormat("%02dg %02dh %02dm %02ds", (int)d, (int)h, (int)m, (int)s);
+  }
+
+//+------------------------------------------------------------------+
+//| Aggiorna il testo del pulsante Trading ON/OFF                     |
+//+------------------------------------------------------------------+
+void UpdateTradingButton()
+  {
+   string name = g_panelPrefix + "BtnTrading";
+   if(ObjectFind(0, name) < 0)
+      return;
+   if(g_tradingEnabledRuntime)
+     {
+      ObjectSetString(0, name, OBJPROP_TEXT, "Trading: ON (clic per OFF)");
+      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrDarkGreen);
+     }
+   else
+     {
+      ObjectSetString(0, name, OBJPROP_TEXT, "Trading: OFF (clic per ON)");
+      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrFireBrick);
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Ricrea tutte le scritte del pannello con i dati aggiornati         |
+//+------------------------------------------------------------------+
+void UpdatePanel()
+  {
+   if(!InpShowPanel)
+      return;
+
+   int x = InpPanelX;
+   int y = InpPanelY;
+   int line = 0;
+
+   PanelSetLabel(g_panelPrefix + "L0", x, y + (line++) * PANEL_LINE_H, "NewsStraddleEA - pannello di controllo", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L1", x, y + (line++) * PANEL_LINE_H,
+                 g_tradingEnabledRuntime ? "Modalita': LIVE (invia ordini reali)" : "Modalita': SIMULAZIONE (nessun ordine)",
+                 g_tradingEnabledRuntime ? clrOrange : clrLightGray);
+
+   int idx = g_activeIndex;
+   int total = ArraySize(g_events);
+   if(idx < 0 || idx >= total || g_events[idx].state == STATE_DONE)
+     {
+      idx = -1;
+      for(int i = 0; i < total; i++)
+         if(g_events[i].state != STATE_DONE) { idx = i; break; }
+     }
+
+   if(idx < 0)
+     {
+      PanelSetLabel(g_panelPrefix + "L2", x, y + (line++) * PANEL_LINE_H, "Nessun evento in coda", clrSilver);
+      PanelSetLabel(g_panelPrefix + "L3", x, y + (line++) * PANEL_LINE_H, "", clrSilver);
+      PanelSetLabel(g_panelPrefix + "L4", x, y + (line++) * PANEL_LINE_H, "", clrSilver);
+      PanelSetLabel(g_panelPrefix + "L5", x, y + (line++) * PANEL_LINE_H, "", clrSilver);
+     }
+   else
+     {
+      NewsEvent ev = g_events[idx];
+      PanelSetLabel(g_panelPrefix + "L2", x, y + (line++) * PANEL_LINE_H, StringFormat("Prossimo evento: %s", ev.label), clrYellow);
+      PanelSetLabel(g_panelPrefix + "L3", x, y + (line++) * PANEL_LINE_H,
+                    StringFormat("Orario server: %s", TimeToString(ev.time, TIME_DATE | TIME_MINUTES | TIME_SECONDS)), clrWhite);
+
+      string stateTxt; color stateClr;
+      if(ev.state == STATE_WAITING)
+        {
+         long secsLeft = (long)(ev.time - TimeCurrent());
+         stateTxt = StringFormat("In osservazione - countdown %s", FormatCountdown(secsLeft));
+         stateClr = clrAqua;
+        }
+      else
+        {
+         bool buyPending  = OrderStillPending(ev.buyTicket);
+         bool sellPending = OrderStillPending(ev.sellTicket);
+         stateTxt = StringFormat("ARMATO - BuyStop:%s SellStop:%s",
+                                  buyPending ? "pendente" : "chiuso/eseguito",
+                                  sellPending ? "pendente" : "chiuso/eseguito");
+         stateClr = clrLime;
+        }
+      PanelSetLabel(g_panelPrefix + "L4", x, y + (line++) * PANEL_LINE_H, stateTxt, stateClr);
+
+      string rangeTxt = ev.rangeValid
+                         ? StringFormat("Range: H=%s  L=%s", DoubleToString(ev.rangeHigh, _Digits), DoubleToString(ev.rangeLow, _Digits))
+                         : "Range: in attesa di dati...";
+      PanelSetLabel(g_panelPrefix + "L5", x, y + (line++) * PANEL_LINE_H, rangeTxt, clrWhite);
+     }
+
+   PanelSetLabel(g_panelPrefix + "L6", x, y + (line++) * PANEL_LINE_H, StringFormat("Eventi totali in coda: %d", total), clrSilver);
+   PanelSetLabel(g_panelPrefix + "L7", x, y + (line++) * PANEL_LINE_H,
+                 StringFormat("Ultimo refresh calendario: %s", TimeToString(g_lastCalendarRefresh, TIME_DATE | TIME_MINUTES)), clrSilver);
+
+   UpdateTradingButton();
+   ChartRedraw(0);
+  }
+
+//+------------------------------------------------------------------+
+//| Crea lo sfondo e i pulsanti del pannello (una tantum)              |
+//+------------------------------------------------------------------+
+void CreatePanel()
+  {
+   if(!InpShowPanel)
+      return;
+
+   int x = InpPanelX;
+   int y = InpPanelY;
+
+   string bg = g_panelPrefix + "BG";
+   if(ObjectFind(0, bg) < 0)
+     {
+      ObjectCreate(0, bg, OBJ_RECTANGLE_LABEL, 0, 0, 0);
+      ObjectSetInteger(0, bg, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+      ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, x - 6);
+      ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, y - 6);
+      ObjectSetInteger(0, bg, OBJPROP_XSIZE, 300);
+      ObjectSetInteger(0, bg, OBJPROP_YSIZE, 200);
+      ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, C'20,20,20');
+      ObjectSetInteger(0, bg, OBJPROP_BORDER_TYPE, BORDER_FLAT);
+      ObjectSetInteger(0, bg, OBJPROP_COLOR, clrSilver);
+      ObjectSetInteger(0, bg, OBJPROP_BACK, false);
+      ObjectSetInteger(0, bg, OBJPROP_SELECTABLE, false);
+      ObjectSetInteger(0, bg, OBJPROP_HIDDEN, true);
+     }
+
+   PanelSetButton(g_panelPrefix + "BtnTrading", x, y + 150, 140, 22, "", clrGray);
+   PanelSetButton(g_panelPrefix + "BtnRefresh", x + 150, y + 150, 140, 22, "Aggiorna calendario", clrDarkSlateGray);
+   PanelSetButton(g_panelPrefix + "BtnCancel",  x, y + 176, 290, 22, "Annulla ordini evento attivo", clrMaroon);
+
+   UpdatePanel();
+  }
+
+//+------------------------------------------------------------------+
+//| Rimuove tutti gli oggetti del pannello dal grafico                 |
+//+------------------------------------------------------------------+
+void DestroyPanel()
+  {
+   ObjectsDeleteAll(0, g_panelPrefix);
+   ChartRedraw(0);
+  }
+
+//+------------------------------------------------------------------+
+//| Cancella gli ordini pendenti dell'evento attualmente attivo        |
+//| (pulsante manuale di emergenza)                                    |
+//+------------------------------------------------------------------+
+void CancelActiveEventOrders()
+  {
+   if(g_activeIndex < 0 || g_activeIndex >= ArraySize(g_events))
+     {
+      Print("NewsStraddleEA: nessun evento attivo da annullare.");
+      return;
+     }
+
+   NewsEvent ev = g_events[g_activeIndex];
+   if(ev.buyTicket != 0 && OrderStillPending(ev.buyTicket))
+      trade.OrderDelete(ev.buyTicket);
+   if(ev.sellTicket != 0 && OrderStillPending(ev.sellTicket))
+      trade.OrderDelete(ev.sellTicket);
+
+   ev.state = STATE_DONE;
+   g_events[g_activeIndex] = ev;
+   Print("NewsStraddleEA [", ev.label, "]: evento annullato manualmente dal pannello.");
+  }
+
+//+------------------------------------------------------------------+
+//| Gestisce i clic sui pulsanti del pannello                         |
+//+------------------------------------------------------------------+
+void OnChartEvent(const int id, const long &lparam, const double &dparam, const string &sparam)
+  {
+   if(id != CHARTEVENT_OBJECT_CLICK)
+      return;
+
+   if(sparam == g_panelPrefix + "BtnTrading")
+     {
+      g_tradingEnabledRuntime = !g_tradingEnabledRuntime;
+      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
+      Print("NewsStraddleEA: trading impostato dal pannello su ", g_tradingEnabledRuntime ? "ON" : "OFF");
+     }
+   else if(sparam == g_panelPrefix + "BtnRefresh")
+     {
+      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
+      RefreshEvents();
+      g_lastCalendarRefresh = TimeCurrent();
+      Print("NewsStraddleEA: refresh calendario forzato dal pannello.");
+     }
+   else if(sparam == g_panelPrefix + "BtnCancel")
+     {
+      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
+      CancelActiveEventOrders();
+     }
+   else
+      return;
+
+   UpdatePanel();
+  }
+
+//+------------------------------------------------------------------+
 void OnTimer()
   {
    if(InpAutoFetchFromCalendar && TimeCurrent() - g_lastCalendarRefresh >= InpCalendarRefreshHours * 3600)
@@ -576,6 +837,7 @@ void OnTimer()
       g_lastCalendarRefresh = TimeCurrent();
      }
    ProcessEvents();
+   UpdatePanel();
   }
 
 //+------------------------------------------------------------------+
