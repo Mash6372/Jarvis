@@ -596,10 +596,18 @@ void PanelSetEdit(const string name, const int x, const int y, const int w, cons
       ObjectSetInteger(0, name, OBJPROP_COLOR, clrBlack);
       ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrWhite);
       ObjectSetInteger(0, name, OBJPROP_ALIGN, ALIGN_CENTER);
+      ObjectSetInteger(0, name, OBJPROP_READONLY, false);
       ObjectSetInteger(0, name, OBJPROP_SELECTABLE, true);
+      ObjectSetInteger(0, name, OBJPROP_SELECTED, false);
       ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
-      ObjectSetInteger(0, name, OBJPROP_ZORDER, 10);
+      ObjectSetInteger(0, name, OBJPROP_ZORDER, 50);
+      ObjectSetInteger(0, name, OBJPROP_BACK, false);
       ObjectSetString(0, name, OBJPROP_TEXT, defaultText);
+     }
+   else
+     {
+      // ripristina sempre lo stato "scrivibile" nel caso qualcosa lo abbia alterato
+      ObjectSetInteger(0, name, OBJPROP_READONLY, false);
      }
   }
 
