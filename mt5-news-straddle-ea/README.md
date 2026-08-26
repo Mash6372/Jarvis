@@ -1,41 +1,44 @@
-# Aquila — Bot MT5 per NFP / FOMC
+# Aquila — Bot MT5 per news ad alto impatto (NFP, FOMC, ecc.)
 
 Expert Advisor per MetaTrader 5 che automatizza la strategia "straddle sulle
-news": osserva le ultime candele a 5 minuti prima di un dato orario (NFP o
-FOMC), calcola massimo e minimo del range e, pochi secondi prima dell'uscita
-della notizia, piazza due ordini pendenti (Buy Stop sopra il massimo, Sell
-Stop sotto il minimo) a una distanza in pips configurabile. Quando uno dei
-due scatta, l'altro viene cancellato automaticamente (logica OCO). Include
-anche la chiusura parziale automatica a un target di pips, con spostamento
-opzionale dello Stop Loss a pareggio sul resto della posizione.
+news": osserva le ultime candele a 5 minuti prima di un dato orario, calcola
+massimo e minimo del range e, pochi secondi prima dell'uscita della notizia,
+piazza due ordini pendenti (Buy Stop sopra il massimo, Sell Stop sotto il
+minimo) a una distanza in pips configurabile. Quando uno dei due scatta,
+l'altro viene cancellato automaticamente (logica OCO). Include anche la
+chiusura parziale automatica a un target di pips, con spostamento opzionale
+dello Stop Loss a pareggio sul resto della posizione.
 
-**Versione 3.0: tutto si controlla dal pannello sul grafico.** Niente
-calendario automatico (poteva fallire su alcuni broker) e niente bisogno di
-riaprire le proprietà dell'EA: sul grafico compare un pannello con due
-sezioni fisse — **NFP (sempre 14:30 ora italiana)** e **FOMC (sempre 20:00
-ora italiana)** — dove imposti direttamente la data del prossimo evento,
-la distanza in pips, il lotto, stop loss, take profit e la chiusura
-parziale.
+**Niente date da inserire.** Sul grafico compare un pannello con due sezioni
+generiche — **Evento 1** ed **Evento 2** (usale per NFP, FOMC o qualsiasi
+altra news) — dove imposti solo l'**orario** (es. `14:30`): l'EA lo applica
+automaticamente alla giornata corrente, calcolando da solo l'orario
+corrispondente sul server del broker a partire dalla differenza
+Italia/server che gli hai indicato una volta sola.
 
 ## Come funziona, passo per passo
 
-1. Nel pannello inserisci la **data** (solo il giorno, l'orario è già
-   fisso per categoria) del prossimo NFP e/o del prossimo FOMC, poi premi
-   il pulsante **"Imposta NFP"** / **"Imposta FOMC"**.
-2. Da quel momento l'EA osserva in tempo reale le candele M5 comprese
-   nella finestra `[orario_notizia − 10min, orario_notizia)` — con i
-   valori di default corrisponde esattamente alle due candele che
-   descrivi tu: per le 14:30, le candele 14:20–14:25 e 14:25–14:30,
-   aggiornando il massimo/minimo mentre la seconda è ancora in
-   formazione.
-3. Quando mancano `InpSecondsBeforeNews` secondi alla notizia (default 3),
+1. Nel pannello scrivi l'**orario italiano** di oggi (formato `HH:MM`, es.
+   `14:30`) nella casella di Evento 1 e/o Evento 2, poi premi **"Imposta
+   Evento 1"** / **"Imposta Evento 2"**.
+2. L'EA calcola l'orario "adesso" in Italia (usando `TimeCurrent()` del
+   server meno la differenza minuti che gli hai indicato) per sapere qual è
+   **oggi**, e lo combina con l'orario che hai scritto. Se quell'orario è
+   già passato da più della finestra di scadenza, l'EA lo sposta
+   automaticamente a **domani** (utile se lo imposti la sera prima).
+3. Da quel momento osserva in tempo reale le candele M5 comprese nella
+   finestra `[orario_notizia − 10min, orario_notizia)` — con i valori di
+   default corrisponde esattamente alle due candele che descrivi tu: per le
+   14:30, le candele 14:20–14:25 e 14:25–14:30, aggiornando il massimo/minimo
+   mentre la seconda è ancora in formazione.
+4. Quando mancano `InpSecondsBeforeNews` secondi alla notizia (default 3),
    l'EA congela il range e piazza:
    - **Buy Stop** = massimo range + pips distanza (dal pannello)
    - **Sell Stop** = minimo range − pips distanza (dal pannello)
-4. Se uno dei due ordini viene eseguito, l'altro viene cancellato subito.
-5. Se nessuno dei due scatta entro `InpExpirationMinutes` minuti, entrambi
+5. Se uno dei due ordini viene eseguito, l'altro viene cancellato subito.
+6. Se nessuno dei due scatta entro `InpExpirationMinutes` minuti, entrambi
    vengono cancellati.
-6. Se una posizione si apre e raggiunge il target di **chiusura parziale**
+7. Se una posizione si apre e raggiunge il target di **chiusura parziale**
    impostato, l'EA chiude automaticamente la percentuale indicata e
    (se attivo) sposta lo Stop Loss a pareggio sul resto.
 
@@ -60,14 +63,14 @@ Appena l'EA parte, in alto a sinistra del grafico compare il pannello:
 
 **Blocco di stato (si aggiorna da solo ogni secondo):**
 - Modalità: LIVE o SIMULAZIONE
-- NFP: countdown all'evento, oppure stato "ordini piazzati" / "posizione
-  aperta" / "non impostato"
-- FOMC: stessa cosa
+- Evento 1: countdown all'orario impostato, oppure "ordini piazzati" /
+  "posizione aperta" / "non impostato"
+- Evento 2: stessa cosa
 - Range (massimo/minimo) trovato, appena disponibile
 
 **Blocco impostazioni (editabile):**
-- Campo data NFP + pulsante "Imposta NFP"
-- Campo data FOMC + pulsante "Imposta FOMC"
+- Campo **orario Evento 1** (`HH:MM`) + pulsante "Imposta Evento 1"
+- Campo **orario Evento 2** (`HH:MM`) + pulsante "Imposta Evento 2"
 - Distanza pips
 - Lotto
 - Stop Loss pips
@@ -85,56 +88,54 @@ Appena l'EA parte, in alto a sinistra del grafico compare il pannello:
   scrive nel log, ma non invia nulla al broker)
 - **BE dopo parziale: ON/OFF** — attiva/disattiva lo spostamento dello
   Stop Loss a pareggio dopo la chiusura parziale
-- **Annulla NFP** / **Annulla FOMC** — pulsante di emergenza: cancella
-  gli ordini pendenti e chiude l'eventuale posizione aperta di quella
-  categoria
+- **Annulla Evento 1** / **Annulla Evento 2** — pulsante di emergenza:
+  cancella gli ordini pendenti e chiude l'eventuale posizione aperta di
+  quell'evento
 
 **Dimensioni del pannello:** c'è anche un campo **"Scala pannello
 (0.5-3.0)"** con il pulsante **"Applica scala"** — aumenta o diminuisci
 questo numero (es. 1.3 per un pannello più grande, 0.8 per uno più
 piccolo) e premi il pulsante: il pannello si ridisegna subito a nuova
-dimensione, senza perdere le date e i valori che avevi già inserito negli
-altri campi. La stessa scala è impostabile anche come valore di partenza
-nelle proprietà dell'EA (`InpPanelScale`), ma da qui la cambi al volo senza
-riaprirle.
+dimensione, senza perdere i valori che avevi già inserito negli altri
+campi.
 
 ### 4. Trova la differenza server/Italia (una tantum)
 Guarda l'orologio del server nel terminale MT5, confrontalo con l'ora
 italiana attuale. Esempio: server 13:32, Italia 12:32 → differenza **60**
 minuti. Questo valore va impostato in `InpServerMinusItalyMin` nelle
 proprietà dell'EA (Inputs) — non cambia quasi mai, quindi non serve un
-campo apposito nel pannello.
+campo apposito nel pannello: l'EA lo tiene a mente e lo riusa per calcolare
+ogni orario che imposti dal pannello.
 
 ### 5. Prima prova: modalità simulazione
-Lascia il pulsante **"Trading: OFF"**, imposta una data/ora vicina per
-test (puoi cambiare temporaneamente `InpNFPDefaultDate`/tempo nelle
-Inputs se vuoi un test rapido), e guarda la scheda **"Esperti"** in basso
-in MT5: dovresti vedere i log con il range calcolato e i prezzi che
-avrebbe piazzato.
+Lascia il pulsante **"Trading: OFF"**, scrivi un orario vicino (tra pochi
+minuti da adesso) in una delle due caselle, premi "Imposta", e guarda la
+scheda **"Esperti"** in basso in MT5: dovresti vedere i log con il range
+calcolato e i prezzi che avrebbe piazzato.
 
 ### 6. Test reale su demo
-Passa a **"Trading: ON"** su un conto **demo**, imposta la data vera del
-prossimo NFP/FOMC dal pannello, e verifica il giorno dell'evento che gli
-ordini pendenti compaiano davvero nella scheda "Trade".
+Passa a **"Trading: ON"** su un conto **demo**, imposta l'orario vero della
+prossima news dal pannello, e verifica il giorno dell'evento che gli ordini
+pendenti compaiano davvero nella scheda "Trade".
 
 ### 7. Solo dopo, conto reale
 Una volta soddisfatto del comportamento su demo, puoi passare a un conto
 vero — controllando bene lotto e stop loss coerenti con il tuo money
 management.
 
-> ⚠️ NFP (8:30 ET) e FOMC (14:00 ET) cadono su 14:30/20:00 italiane per
-> quasi tutto l'anno perché USA e Europa spostano l'ora legale con circa
-> una settimana di scarto. Nelle 1-2 settimane intorno ai cambi di ora
-> (metà marzo e fine ottobre/inizio novembre) l'orario italiano reale può
-> spostarsi di **un'ora**: in quelle settimane ricontrolla l'orario esatto
-> su un calendario economico (es. Forex Factory) prima di fidarti
-> ciecamente del bot.
+> ⚠️ NFP esce alle 8:30 ET e FOMC alle 14:00 ET, che corrispondono a
+> 14:30/20:00 italiane per quasi tutto l'anno — ma USA e Europa spostano
+> l'ora legale con circa una settimana di scarto. Nelle 1-2 settimane
+> intorno ai cambi di ora (metà marzo e fine ottobre/inizio novembre)
+> l'orario italiano reale della news può spostarsi di **un'ora**: in quelle
+> settimane ricontrolla l'orario esatto su un calendario economico (es.
+> Forex Factory) prima di scriverlo nel pannello.
 
 ## Tabella degli input (valori di default, tutti modificabili anche dal pannello tranne dove indicato)
 
 | Input | Descrizione |
 |---|---|
-| `InpNFPDefaultDate` / `InpFOMCDefaultDate` | Data di partenza precaricata nel pannello all'avvio. |
+| `InpEvent1DefaultTime` / `InpEvent2DefaultTime` | Orario italiano (`HH:MM`) precaricato nel pannello all'avvio. |
 | `InpServerMinusItalyMin` | Differenza in minuti server−Italia (solo qui, non nel pannello). |
 | `InpLookbackMinutes` | Minuti da osservare prima della notizia (default 10 = 2 candele M5, solo qui). |
 | `InpSecondsBeforeNews` | Secondi prima della notizia in cui si congela il range (solo qui). |
@@ -155,7 +156,7 @@ management.
 ## Note sulla gestione del rischio
 
 - Imposta sempre uno Stop Loss coerente con il tuo money management:
-  durante NFP/FOMC lo spread e lo slippage possono aumentare molto.
+  durante le news lo spread e lo slippage possono aumentare molto.
 - La chiusura parziale + spostamento a pareggio riduce il rischio dopo un
   primo movimento a favore, ma non lo elimina: resta comunque uno Stop
   Loss iniziale.
@@ -165,3 +166,7 @@ management.
 - Dopo ogni modifica nei campi del pannello, ricordati di premere
   **"Applica impostazioni"**: finché non lo fai, l'EA continua a usare i
   valori precedenti.
+- Ogni evento va "Impostato" di nuovo prima della news successiva: non
+  essendoci più una data memorizzata, l'orario vale solo per la giornata
+  in cui lo imposti (o per il giorno dopo, se l'hai scritto quando l'orario
+  di oggi era già passato).

@@ -1,10 +1,11 @@
 //+------------------------------------------------------------------+
 //|                                                    Aquila.mq5     |
 //|  AQUILA - sempre in prima linea, scatta al momento giusto.        |
-//|  Strategia "straddle" per NFP (14:30 IT) e FOMC (20:00 IT).       |
-//|  Tutto si controlla dal pannello sul grafico: data dei due        |
-//|  eventi, distanza in pips, lotto, stop loss, take profit e        |
-//|  chiusura parziale a target.                                      |
+//|  Strategia "straddle sulle news" con due eventi indipendenti      |
+//|  (es. NFP e FOMC): l'orario si imposta dal pannello sul grafico,  |
+//|  vale per la giornata corrente (o il giorno dopo se gia' passato).|
+//|  Tutto il resto si controlla dallo stesso pannello: distanza in   |
+//|  pips, lotto, stop loss, take profit e chiusura parziale a target.|
 //|                                                                    |
 //|  Per ogni evento attivo, l'EA:                                    |
 //|   1) osserva le candele M5 nei minuti precedenti l'orario della   |
@@ -31,11 +32,11 @@
 //  comunque modificabile in qualsiasi momento dal pannello sul       //
 //  grafico, senza dover rimuovere/riattaccare l'EA.                  //
 
-input group "=== NFP (14:30 ora italiana) ==="
-input string InpNFPDefaultDate       = "2026.09.04"; // Data del prossimo NFP (AAAA.MM.GG)
+input group "=== Evento 1 (es. NFP) ==="
+input string InpEvent1DefaultTime    = "14:30"; // Orario italiano di partenza (HH:MM) - vale per OGGI
 
-input group "=== FOMC (20:00 ora italiana) ==="
-input string InpFOMCDefaultDate      = "2026.09.17"; // Data del prossimo FOMC (AAAA.MM.GG)
+input group "=== Evento 2 (es. FOMC) ==="
+input string InpEvent2DefaultTime    = "20:00"; // Orario italiano di partenza (HH:MM) - vale per OGGI
 
 input group "=== Fuso orario ==="
 input int    InpServerMinusItalyMin  = 60;   // Differenza in MINUTI tra orario server del broker e orario italiano
@@ -142,28 +143,54 @@ void ResetCategory(CategoryState &cat, const string label)
   }
 
 //+------------------------------------------------------------------+
-//| Imposta/riarma una categoria con una nuova data (AAAA.MM.GG) e     |
-//| l'orario italiano fisso della categoria (es. "14:30" o "20:00")    |
+//| Calcola l'orario server corrispondente a un orario italiano       |
+//| (HH:MM) di OGGI, usando la differenza server-Italia memorizzata.  |
+//| Se l'orario risultante e' gia' passato da piu' del tempo di       |
+//| scadenza, lo sposta automaticamente a domani.                     |
 //+------------------------------------------------------------------+
-bool ArmCategory(CategoryState &cat, string dateStr, const string timeItaly)
+datetime ComputeTargetTime(string timeStr)
   {
-   StringTrimLeft(dateStr);
-   StringTrimRight(dateStr);
-   if(dateStr == "")
+   StringTrimLeft(timeStr);
+   StringTrimRight(timeStr);
+   if(timeStr == "")
+      return(0);
+
+   datetime italyNow = TimeCurrent() - InpServerMinusItalyMin * 60;
+   string   todayStr = TimeToString(italyNow, TIME_DATE);
+
+   datetime italyTarget = StringToTime(todayStr + " " + timeStr);
+   if(italyTarget <= 0)
+      return(0);
+
+   datetime serverTarget = italyTarget + InpServerMinusItalyMin * 60;
+
+   if(serverTarget + InpExpirationMinutes * 60 < TimeCurrent())
+      serverTarget += 24 * 3600; // era gia' passato oggi: vale per domani
+
+   return(serverTarget);
+  }
+
+//+------------------------------------------------------------------+
+//| Imposta/riarma una categoria con un orario italiano (HH:MM),      |
+//| valido per oggi (o domani se l'orario di oggi e' gia' passato)    |
+//+------------------------------------------------------------------+
+bool ArmCategory(CategoryState &cat, string timeStr)
+  {
+   StringTrimLeft(timeStr);
+   StringTrimRight(timeStr);
+   if(timeStr == "")
      {
-      PrintFormat("Aquila [%s]: nessuna data inserita, categoria disattivata.", cat.label);
+      PrintFormat("Aquila [%s]: nessun orario inserito, categoria disattivata.", cat.label);
       ResetCategory(cat, cat.label);
       return(false);
      }
 
-   datetime italyTime = StringToTime(dateStr + " " + timeItaly);
-   if(italyTime <= 0)
+   datetime serverTime = ComputeTargetTime(timeStr);
+   if(serverTime <= 0)
      {
-      PrintFormat("Aquila [%s]: data non valida '%s' (usa il formato AAAA.MM.GG).", cat.label, dateStr);
+      PrintFormat("Aquila [%s]: orario non valido '%s' (usa il formato HH:MM).", cat.label, timeStr);
       return(false);
      }
-
-   datetime serverTime = italyTime + InpServerMinusItalyMin * 60;
 
    ResetCategory(cat, cat.label);
    cat.time   = serverTime;
@@ -193,13 +220,13 @@ int OnInit()
    g_partialPercent        = InpPartialClosePercent;
    g_partialTriggerPips    = InpPartialTriggerPips;
 
-   ResetCategory(g_nfp, "NFP");
-   ResetCategory(g_fomc, "FOMC");
+   ResetCategory(g_nfp, "Evento 1");
+   ResetCategory(g_fomc, "Evento 2");
 
-   if(StringLen(InpNFPDefaultDate) > 0)
-      ArmCategory(g_nfp, InpNFPDefaultDate, "14:30");
-   if(StringLen(InpFOMCDefaultDate) > 0)
-      ArmCategory(g_fomc, InpFOMCDefaultDate, "20:00");
+   if(StringLen(InpEvent1DefaultTime) > 0)
+      ArmCategory(g_nfp, InpEvent1DefaultTime);
+   if(StringLen(InpEvent2DefaultTime) > 0)
+      ArmCategory(g_fomc, InpEvent2DefaultTime);
 
    EventSetTimer(1);
    CreatePanel();
@@ -734,9 +761,9 @@ void UpdatePanel()
                  g_tradingEnabledRuntime ? "Modalita': LIVE (invia ordini reali)" : "Modalita': SIMULAZIONE",
                  g_tradingEnabledRuntime ? clrOrange : clrLightGray);
 
-   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * g_lineH, "NFP: " + CategoryStatusText(g_nfp), clrYellow);
+   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * g_lineH, "Evento 1: " + CategoryStatusText(g_nfp), clrYellow);
    PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * g_lineH, CategoryRangeText(g_nfp), clrWhite);
-   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * g_lineH, "FOMC: " + CategoryStatusText(g_fomc), clrYellow);
+   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * g_lineH, "Evento 2: " + CategoryStatusText(g_fomc), clrYellow);
    PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * g_lineH, CategoryRangeText(g_fomc), clrWhite);
 
    UpdateTradingButton();
@@ -782,14 +809,14 @@ void CreatePanel()
    int by = y + 6 * g_lineH + SC(10);
 
    // -- Blocco impostazioni (editabile) --
-   PanelSetLabel(g_panelPrefix + "LblNFPDate", x, by, "Data NFP (AAAA.MM.GG):", clrSilver);
-   PanelSetEdit(g_panelPrefix + "EditNFPDate", x, by + SC(14), SC(140), SC(20), InpNFPDefaultDate);
-   PanelSetButton(g_panelPrefix + "BtnSetNFP", x + SC(150), by + SC(14), SC(130), SC(20), "Imposta NFP", clrDarkSlateGray);
+   PanelSetLabel(g_panelPrefix + "LblNFPDate", x, by, "Orario Evento 1 (HH:MM, oggi):", clrSilver);
+   PanelSetEdit(g_panelPrefix + "EditNFPDate", x, by + SC(14), SC(140), SC(20), InpEvent1DefaultTime);
+   PanelSetButton(g_panelPrefix + "BtnSetNFP", x + SC(150), by + SC(14), SC(130), SC(20), "Imposta Evento 1", clrDarkSlateGray);
    by += SC(38);
 
-   PanelSetLabel(g_panelPrefix + "LblFOMCDate", x, by, "Data FOMC (AAAA.MM.GG):", clrSilver);
-   PanelSetEdit(g_panelPrefix + "EditFOMCDate", x, by + SC(14), SC(140), SC(20), InpFOMCDefaultDate);
-   PanelSetButton(g_panelPrefix + "BtnSetFOMC", x + SC(150), by + SC(14), SC(130), SC(20), "Imposta FOMC", clrDarkSlateGray);
+   PanelSetLabel(g_panelPrefix + "LblFOMCDate", x, by, "Orario Evento 2 (HH:MM, oggi):", clrSilver);
+   PanelSetEdit(g_panelPrefix + "EditFOMCDate", x, by + SC(14), SC(140), SC(20), InpEvent2DefaultTime);
+   PanelSetButton(g_panelPrefix + "BtnSetFOMC", x + SC(150), by + SC(14), SC(130), SC(20), "Imposta Evento 2", clrDarkSlateGray);
    by += SC(38);
 
    PanelSetLabel(g_panelPrefix + "LblDist", x, by, "Distanza pips:", clrSilver);
@@ -828,8 +855,8 @@ void CreatePanel()
    PanelSetButton(g_panelPrefix + "BtnBE", x + SC(145), by, SC(135), SC(22), "", clrGray);
    by += SC(28);
 
-   PanelSetButton(g_panelPrefix + "BtnCancelNFP", x, by, SC(135), SC(22), "Annulla NFP", clrMaroon);
-   PanelSetButton(g_panelPrefix + "BtnCancelFOMC", x + SC(145), by, SC(135), SC(22), "Annulla FOMC", clrMaroon);
+   PanelSetButton(g_panelPrefix + "BtnCancelNFP", x, by, SC(135), SC(22), "Annulla Evento 1", clrMaroon);
+   PanelSetButton(g_panelPrefix + "BtnCancelFOMC", x + SC(145), by, SC(135), SC(22), "Annulla Evento 2", clrMaroon);
    by += SC(28);
 
    ObjectSetInteger(0, bg, OBJPROP_YSIZE, (by - y) + SC(20));
@@ -925,14 +952,14 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
    else if(sparam == p + "BtnSetNFP")
      {
       ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-      string d = ObjectGetString(0, p + "EditNFPDate", OBJPROP_TEXT);
-      ArmCategory(g_nfp, d, "14:30");
+      string t = ObjectGetString(0, p + "EditNFPDate", OBJPROP_TEXT);
+      ArmCategory(g_nfp, t);
      }
    else if(sparam == p + "BtnSetFOMC")
      {
       ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-      string d = ObjectGetString(0, p + "EditFOMCDate", OBJPROP_TEXT);
-      ArmCategory(g_fomc, d, "20:00");
+      string t = ObjectGetString(0, p + "EditFOMCDate", OBJPROP_TEXT);
+      ArmCategory(g_fomc, t);
      }
    else if(sparam == p + "BtnApply")
      {
