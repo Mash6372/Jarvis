@@ -1,4 +1,4 @@
-# NewsStraddleEA — Bot MT5 per NFP / FOMC
+# Aquila — Bot MT5 per NFP / FOMC
 
 Expert Advisor per MetaTrader 5 che automatizza la strategia "straddle sulle
 news": osserva le ultime candele a 5 minuti prima di un dato orario (NFP o
@@ -43,12 +43,12 @@ parziale.
 
 ### 1. Copia il file e compila
 *File → Apri cartella dati* → `MQL5/Experts/` → copia lì
-`NewsStraddleEA.mq5`. Apri MetaEditor, premi **F7**, verifica "0 errori".
+`Aquila.mq5`. Apri MetaEditor, premi **F7**, verifica "0 errori".
 
 ### 2. Attacca l'EA al grafico
 Apri un grafico (es. EURUSD — il timeframe visualizzato non conta, l'EA
 legge sempre M5 internamente). Nel Navigator di MT5 (Ctrl+N), sotto
-"Expert Advisors", fai doppio clic su **NewsStraddleEA**. Nella finestra
+"Expert Advisors", fai doppio clic su **Aquila**. Nella finestra
 che si apre:
 - scheda **Common** → spunta "Consenti Trading algoritmico"
 - assicurati che il pulsante **"Algo Trading"** nella barra degli
@@ -88,6 +88,15 @@ Appena l'EA parte, in alto a sinistra del grafico compare il pannello:
 - **Annulla NFP** / **Annulla FOMC** — pulsante di emergenza: cancella
   gli ordini pendenti e chiude l'eventuale posizione aperta di quella
   categoria
+
+**Dimensioni del pannello:** c'è anche un campo **"Scala pannello
+(0.5-3.0)"** con il pulsante **"Applica scala"** — aumenta o diminuisci
+questo numero (es. 1.3 per un pannello più grande, 0.8 per uno più
+piccolo) e premi il pulsante: il pannello si ridisegna subito a nuova
+dimensione, senza perdere le date e i valori che avevi già inserito negli
+altri campi. La stessa scala è impostabile anche come valore di partenza
+nelle proprietà dell'EA (`InpPanelScale`), ma da qui la cambi al volo senza
+riaprirle.
 
 ### 4. Trova la differenza server/Italia (una tantum)
 Guarda l'orologio del server nel terminale MT5, confrontalo con l'ora
@@ -141,6 +150,7 @@ management.
 | `InpMagicNumber` | Magic number per identificare gli ordini dell'EA (solo qui). |
 | `InpEnableTrading` | Stato iniziale del pulsante Trading ON/OFF. |
 | `InpShowPanel`, `InpPanelX`, `InpPanelY` | Mostra/posiziona il pannello sul grafico (solo qui). |
+| `InpPanelScale` | Scala di partenza del pannello (poi regolabile anche dal campo "Scala pannello" + pulsante "Applica scala"). |
 
 ## Note sulla gestione del rischio
 
