@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real Estate Flip Analyzer</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>Real Estate Flip Analyzer</h1>
+  <p class="subtitle">Confronta annunci da pi&ugrave; portali e trova le migliori operazioni compra-ristruttura-rivendi</p>
+</header>
+
+<main>
+  <section class="panel" id="search-panel">
+    <h2>Ricerche salvate</h2>
+    <form id="search-form" class="search-form">
+      <input type="text" name="name" placeholder="Nome ricerca (es. Milano Centro)" required>
+      <input type="text" name="city" placeholder="Citt&agrave; (es. Milano)" required>
+      <input type="text" name="zone" placeholder="Zona (opzionale)">
+      <input type="number" name="min_price" placeholder="Prezzo min &euro;">
+      <input type="number" name="max_price" placeholder="Prezzo max &euro;">
+      <input type="number" name="min_size_sqm" placeholder="Mq min">
+      <input type="number" name="max_size_sqm" placeholder="Mq max">
+      <input type="number" name="min_rooms" placeholder="Locali min">
+      <button type="submit">Aggiungi ricerca</button>
+    </form>
+    <div id="searches-list" class="chips"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Annunci</h2>
+    <div class="filters">
+      <input type="text" id="f-city" placeholder="Citt&agrave;">
+      <input type="text" id="f-zone" placeholder="Zona">
+      <input type="number" id="f-min-price" placeholder="Prezzo min">
+      <input type="number" id="f-max-price" placeholder="Prezzo max">
+      <input type="number" id="f-min-size" placeholder="Mq min">
+      <input type="number" id="f-max-size" placeholder="Mq max">
+      <input type="number" id="f-min-rooms" placeholder="Locali min">
+      <select id="f-condition">
+        <option value="">Tutte le condizioni</option>
+        <option value="ottimo">Ottimo/Nuovo</option>
+        <option value="buono">Buono</option>
+        <option value="da_ristrutturare">Da ristrutturare</option>
+        <option value="grezzo">Grezzo</option>
+      </select>
+      <select id="f-source">
+        <option value="">Tutti i portali</option>
+        <option value="immobiliare.it">immobiliare.it</option>
+        <option value="idealista.it">idealista.it</option>
+      </select>
+      <select id="f-sort">
+        <option value="deal_score">Ordina per: Deal Score</option>
+        <option value="price">Ordina per: Prezzo</option>
+        <option value="price_per_sqm">Ordina per: &euro;/mq</option>
+        <option value="size_sqm">Ordina per: Superficie</option>
+      </select>
+      <button id="apply-filters">Applica filtri</button>
+    </div>
+
+    <div class="import-box">
+      <input type="text" id="import-url" placeholder="Incolla il link di un annuncio (immobiliare.it o idealista.it) per importarlo subito">
+      <button id="import-btn">Importa annuncio</button>
+    </div>
+
+    <div id="listings-table-wrap">
+      <table id="listings-table">
+        <thead>
+          <tr>
+            <th>Titolo</th>
+            <th>Portale</th>
+            <th>Citt&agrave;/Zona</th>
+            <th>Prezzo</th>
+            <th>Mq</th>
+            <th>&euro;/mq</th>
+            <th>Locali</th>
+            <th>Condizione</th>
+            <th>Valore post-reno (stima)</th>
+            <th>Costo ristrutturazione (stima)</th>
+            <th>Margine stimato</th>
+            <th>ROI %</th>
+            <th>Deal Score</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="listings-body"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>Le stime di ristrutturazione, costi di transazione e valore post-ristrutturazione sono ipotesi configurabili
+     (vedi <code>backend/app/config.py</code>) e vanno sempre verificate con preventivi reali prima di decidere.</p>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
