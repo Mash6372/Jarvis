@@ -22,8 +22,18 @@
 
 //================================= INPUT ==================================
 
-input group "=== Eventi (orario SERVER del broker, formato YYYY.MM.DD HH:MM) ==="
-input string InpNewsTimes            = "2026.09.05 14:30, 2026.10.03 14:30"; // Lista orari notizie separati da virgola
+input group "=== NFP (esce sempre alle 14:30 ora italiana) ==="
+input bool   InpEnableNFP            = true; // Abilita gli eventi NFP
+input string InpNFPDates             = "2026.09.04, 2026.10.02, 2026.11.06, 2026.12.04"; // Date NFP (solo giorno, formato YYYY.MM.DD, separate da virgola)
+input string InpNFPTimeItaly         = "14:30"; // Orario italiano di uscita NFP (HH:MM)
+
+input group "=== FOMC (esce sempre alle 20:00 ora italiana) ==="
+input bool   InpEnableFOMC           = true; // Abilita gli eventi FOMC
+input string InpFOMCDates            = "2026.09.17, 2026.11.05, 2026.12.17"; // Date FOMC (solo giorno, formato YYYY.MM.DD, separate da virgola)
+input string InpFOMCTimeItaly        = "20:00"; // Orario italiano di uscita FOMC (HH:MM)
+
+input group "=== Fuso orario ==="
+input int    InpServerMinusItalyMin  = 60;   // Differenza in MINUTI tra orario server del broker e orario italiano (server = italia + questo valore). Verifica il tuo broker!
 
 input group "=== Finestra di osservazione ==="
 input int    InpLookbackMinutes      = 10;   // Minuti da guardare prima della notizia (10 = 2 candele M5)
@@ -53,6 +63,7 @@ enum EventState
 struct NewsEvent
   {
    datetime    time;
+   string      label;
    EventState  state;
    double      rangeHigh;
    double      rangeLow;
@@ -72,9 +83,18 @@ int OnInit()
    trade.SetDeviationInPoints(InpSlippagePoints);
    trade.SetTypeFillingBySymbol(_Symbol);
 
-   if(!ParseNewsTimes(InpNewsTimes))
+   ArrayResize(g_events, 0);
+
+   if(InpEnableNFP)
+      AddEvents(InpNFPDates, InpNFPTimeItaly, "NFP");
+   if(InpEnableFOMC)
+      AddEvents(InpFOMCDates, InpFOMCTimeItaly, "FOMC");
+
+   SortEvents();
+
+   if(ArraySize(g_events) == 0)
      {
-      Print("NewsStraddleEA: nessun orario valido trovato in InpNewsTimes");
+      Print("NewsStraddleEA: nessun evento valido trovato (controlla InpNFPDates/InpFOMCDates).");
       return(INIT_PARAMETERS_INCORRECT);
      }
 
@@ -88,48 +108,59 @@ void OnDeinit(const int reason)
   }
 
 //+------------------------------------------------------------------+
-//| Converte la lista di date/ore in input in eventi ordinati         |
+//| Aggiunge a g_events gli eventi di una categoria (NFP o FOMC):     |
+//| combina ogni data con l'orario italiano fisso e lo converte in    |
+//| orario server usando InpServerMinusItalyMin.                      |
 //+------------------------------------------------------------------+
-bool ParseNewsTimes(const string list)
+void AddEvents(const string datesList, const string timeItaly, const string label)
   {
-   string parts[];
-   int n = StringSplit(list, ',', parts);
-   ArrayResize(g_events, 0);
+   string dates[];
+   int n = StringSplit(datesList, ',', dates);
 
    for(int i = 0; i < n; i++)
      {
-      string s = parts[i];
-      StringTrimLeft(s);
-      StringTrimRight(s);
-      if(s == "")
+      string d = dates[i];
+      StringTrimLeft(d);
+      StringTrimRight(d);
+      if(d == "")
          continue;
 
-      datetime t = StringToTime(s);
-      if(t <= 0)
+      datetime italyTime = StringToTime(d + " " + timeItaly);
+      if(italyTime <= 0)
         {
-         Print("NewsStraddleEA: orario non valido ignorato: '", s, "'");
+         Print("NewsStraddleEA [", label, "]: data non valida ignorata: '", d, "'");
          continue;
         }
 
+      datetime serverTime = italyTime + InpServerMinusItalyMin * 60;
+
       // scarta eventi già passati oltre la finestra di scadenza
-      if(t + InpExpirationMinutes * 60 < TimeCurrent())
+      if(serverTime + InpExpirationMinutes * 60 < TimeCurrent())
         {
-         Print("NewsStraddleEA: evento già passato ignorato: ", TimeToString(t));
+         Print("NewsStraddleEA [", label, "]: evento già passato ignorato: ", TimeToString(serverTime));
          continue;
         }
 
       int idx = ArraySize(g_events);
       ArrayResize(g_events, idx + 1);
-      g_events[idx].time       = t;
+      g_events[idx].time       = serverTime;
+      g_events[idx].label      = label;
       g_events[idx].state      = STATE_WAITING;
       g_events[idx].rangeHigh  = -1;
       g_events[idx].rangeLow   = -1;
       g_events[idx].rangeValid = false;
       g_events[idx].buyTicket  = 0;
       g_events[idx].sellTicket = 0;
-     }
 
-   // ordina per data crescente (semplice insertion sort, gli array sono piccoli)
+      PrintFormat("NewsStraddleEA [%s]: evento programmato -> %s (orario server)", label, TimeToString(serverTime, TIME_DATE | TIME_MINUTES));
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Ordina g_events per data crescente (insertion sort, array piccoli)|
+//+------------------------------------------------------------------+
+void SortEvents()
+  {
    int total = ArraySize(g_events);
    for(int i = 1; i < total; i++)
      {
@@ -142,8 +173,6 @@ bool ParseNewsTimes(const string list)
         }
       g_events[j + 1] = key;
      }
-
-   return(total > 0);
   }
 
 //+------------------------------------------------------------------+
@@ -227,7 +256,7 @@ void PlaceOrders(NewsEvent &ev)
   {
    if(!ev.rangeValid)
      {
-      Print("NewsStraddleEA: range non valido per l'evento ", TimeToString(ev.time), ", ordini NON piazzati.");
+      Print("NewsStraddleEA [", ev.label, "]: range non valido per l'evento ", TimeToString(ev.time), ", ordini NON piazzati.");
       ev.state = STATE_DONE;
       return;
      }
@@ -269,8 +298,8 @@ void PlaceOrders(NewsEvent &ev)
    double volume = NormalizeVolume(InpLotSize);
    datetime expiration = ev.time + InpExpirationMinutes * 60;
 
-   PrintFormat("NewsStraddleEA: evento %s -> range [%s , %s], BuyStop=%s SellStop=%s",
-               TimeToString(ev.time), DoubleToString(ev.rangeLow, digits), DoubleToString(ev.rangeHigh, digits),
+   PrintFormat("NewsStraddleEA [%s]: evento %s -> range [%s , %s], BuyStop=%s SellStop=%s",
+               ev.label, TimeToString(ev.time), DoubleToString(ev.rangeLow, digits), DoubleToString(ev.rangeHigh, digits),
                DoubleToString(buyPrice, digits), DoubleToString(sellPrice, digits));
 
    if(!InpEnableTrading)
@@ -280,7 +309,7 @@ void PlaceOrders(NewsEvent &ev)
       return;
      }
 
-   string cmt = "NewsStraddle " + TimeToString(ev.time, TIME_DATE | TIME_MINUTES);
+   string cmt = ev.label + " " + TimeToString(ev.time, TIME_DATE | TIME_MINUTES);
 
    if(trade.BuyStop(volume, buyPrice, _Symbol, sl_buy, tp_buy, ORDER_TIME_SPECIFIED, expiration, cmt))
       ev.buyTicket = trade.ResultOrder();
@@ -386,7 +415,7 @@ void OnTick()
         }
       else
         {
-         Print("NewsStraddleEA: evento ", TimeToString(ev.time), " perso (EA avviato troppo tardi), saltato.");
+         Print("NewsStraddleEA [", ev.label, "]: evento ", TimeToString(ev.time), " perso (EA avviato troppo tardi), saltato.");
          ev.state = STATE_DONE;
         }
      }
