@@ -106,6 +106,8 @@ struct CategoryState
    ulong       sellTicket;
    ulong       positionTicket;
    bool        partialDone;
+   double      buyPricePlaced;
+   double      sellPricePlaced;
   };
 
 CategoryState g_nfp;
@@ -133,6 +135,8 @@ void ResetCategory(CategoryState &cat, const string label)
    cat.sellTicket     = 0;
    cat.positionTicket = 0;
    cat.partialDone    = false;
+   cat.buyPricePlaced  = 0;
+   cat.sellPricePlaced = 0;
   }
 
 //+------------------------------------------------------------------+
@@ -363,6 +367,9 @@ void PlaceOrders(CategoryState &cat)
      }
 
    string cmt = cat.label + " " + TimeToString(cat.time, TIME_DATE | TIME_MINUTES);
+
+   cat.buyPricePlaced  = buyPrice;
+   cat.sellPricePlaced = sellPrice;
 
    if(trade.BuyStop(volume, buyPrice, _Symbol, sl_buy, tp_buy, ORDER_TIME_SPECIFIED, expiration, cmt))
       cat.buyTicket = trade.ResultOrder();
@@ -793,6 +800,94 @@ void DestroyPanel()
   }
 
 //+------------------------------------------------------------------+
+//| Crea/aggiorna/rimuove una linea orizzontale di livello sul grafico|
+//+------------------------------------------------------------------+
+void SetLevelLine(const string name, const double price, const color clr, const ENUM_LINE_STYLE style, const string text)
+  {
+   if(price <= 0)
+     {
+      ObjectDelete(0, name);
+      return;
+     }
+   if(ObjectFind(0, name) < 0)
+     {
+      ObjectCreate(0, name, OBJ_HLINE, 0, 0, price);
+      ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
+      ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
+      ObjectSetInteger(0, name, OBJPROP_BACK, true);
+     }
+   ObjectSetDouble(0, name, OBJPROP_PRICE, price);
+   ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
+   ObjectSetInteger(0, name, OBJPROP_STYLE, style);
+   ObjectSetInteger(0, name, OBJPROP_WIDTH, 1);
+   ObjectSetString(0, name, OBJPROP_TEXT, text);
+  }
+
+//+------------------------------------------------------------------+
+//| Disegna sul grafico il range tracciato e i livelli di ingresso    |
+//| (anteprima tratteggiata finche' non sono piazzati davvero, poi    |
+//| continui; sostituiti dal prezzo di ingresso reale a posizione     |
+//| aperta)                                                            |
+//+------------------------------------------------------------------+
+void DrawCategoryLines(CategoryState &cat)
+  {
+   string prefix = g_panelPrefix + "LN_" + cat.label + "_";
+   string nHigh = prefix + "High";
+   string nLow  = prefix + "Low";
+   string nBuy  = prefix + "Buy";
+   string nSell = prefix + "Sell";
+
+   if(!cat.active || !cat.rangeValid || cat.state == STATE_DONE)
+     {
+      ObjectDelete(0, nHigh);
+      ObjectDelete(0, nLow);
+      ObjectDelete(0, nBuy);
+      ObjectDelete(0, nSell);
+      return;
+     }
+
+   SetLevelLine(nHigh, cat.rangeHigh, clrDeepSkyBlue, STYLE_DOT, cat.label + " - massimo range");
+   SetLevelLine(nLow,  cat.rangeLow,  clrDeepSkyBlue, STYLE_DOT, cat.label + " - minimo range");
+
+   if(cat.state == STATE_WAITING)
+     {
+      double pip = PipSize();
+      double buyPreview  = cat.rangeHigh + InpPipsDistance * pip;
+      double sellPreview = cat.rangeLow  - InpPipsDistance * pip;
+      SetLevelLine(nBuy,  buyPreview,  clrLime,      STYLE_DASHDOT, cat.label + " - anteprima Buy Stop");
+      SetLevelLine(nSell, sellPreview, clrOrangeRed, STYLE_DASHDOT, cat.label + " - anteprima Sell Stop");
+     }
+   else if(cat.state == STATE_ARMED)
+     {
+      SetLevelLine(nBuy,  cat.buyPricePlaced,  clrLime,      STYLE_SOLID, cat.label + " - Buy Stop piazzato");
+      SetLevelLine(nSell, cat.sellPricePlaced, clrOrangeRed, STYLE_SOLID, cat.label + " - Sell Stop piazzato");
+     }
+   else if(cat.state == STATE_POSITION)
+     {
+      if(cat.positionTicket != 0 && PositionSelectByTicket(cat.positionTicket))
+        {
+         double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
+         long   posType   = PositionGetInteger(POSITION_TYPE);
+         if(posType == POSITION_TYPE_BUY)
+           {
+            SetLevelLine(nBuy, openPrice, clrLime, STYLE_SOLID, cat.label + " - ingresso BUY");
+            ObjectDelete(0, nSell);
+           }
+         else
+           {
+            SetLevelLine(nSell, openPrice, clrOrangeRed, STYLE_SOLID, cat.label + " - ingresso SELL");
+            ObjectDelete(0, nBuy);
+           }
+        }
+      else
+        {
+         ObjectDelete(0, nBuy);
+         ObjectDelete(0, nSell);
+        }
+     }
+  }
+
+//+------------------------------------------------------------------+
 //| Gestisce i clic sui pulsanti del pannello                         |
 //+------------------------------------------------------------------+
 void OnChartEvent(const int id, const long &lparam, const double &dparam, const string &sparam)
@@ -833,7 +928,10 @@ void OnTimer()
   {
    ProcessCategory(g_nfp);
    ProcessCategory(g_fomc);
+   DrawCategoryLines(g_nfp);
+   DrawCategoryLines(g_fomc);
    UpdatePanel();
+   ChartRedraw(0);
   }
 
 //+------------------------------------------------------------------+

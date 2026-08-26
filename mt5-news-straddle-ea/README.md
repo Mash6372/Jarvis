@@ -76,6 +76,20 @@ Appena l'EA parte, in alto a sinistra del grafico compare:
 - Riga con i valori attivi: distanza pips, lotto, stop loss, take profit
 - Riga con i valori di chiusura parziale attivi
 
+**Linee sul grafico:** mentre osserva le candele, l'EA disegna anche
+direttamente sul prezzo:
+- una linea **azzurra punteggiata** sul massimo e una sul minimo del range
+  che sta tracciando;
+- una linea **verde** (Buy Stop) e una **rossa** (Sell Stop) ai livelli di
+  ingresso: **tratteggiate** finché sono solo un'anteprima (l'EA non ha
+  ancora piazzato nulla), **continue** una volta che gli ordini sono
+  davvero stati inviati al broker;
+- quando uno dei due scatta e diventa una posizione, resta visibile solo la
+  linea del prezzo di ingresso realmente eseguito.
+
+Le linee di un evento spariscono automaticamente quando l'evento si
+conclude (posizione chiusa, o annullato dal pannello).
+
 **Pulsanti:**
 - **Trading: ON/OFF** — accende/spegne l'invio di ordini reali senza
   dover riavviare l'EA (se OFF, l'EA calcola comunque i livelli e li
