@@ -1,63 +1,57 @@
 //+------------------------------------------------------------------+
 //|                                           NewsStraddleEA.mq5      |
-//|  Strategia "straddle" per news ad alto impatto (NFP, FOMC, ecc.) |
+//|  Strategia "straddle" per NFP (14:30 IT) e FOMC (20:00 IT).       |
+//|  Tutto si controlla dal pannello sul grafico: data dei due        |
+//|  eventi, distanza in pips, lotto, stop loss, take profit e        |
+//|  chiusura parziale a target.                                      |
 //|                                                                    |
-//|  Per ogni evento (trovato in automatico nel Calendario Economico  |
-//|  di MT5, oppure inserito a mano), l'EA:                           |
-//|   1) tiene sotto osservazione le ultime N candele M5 precedenti   |
-//|      l'orario della notizia (default: 10 minuti = 2 candele),     |
-//|      aggiornando in tempo reale massimo e minimo raggiunti;       |
-//|   2) pochi secondi prima dell'orario della notizia (default 3)    |
-//|      congela il range e piazza due ordini pendenti in OCO:        |
+//|  Per ogni evento attivo, l'EA:                                    |
+//|   1) osserva le candele M5 nei minuti precedenti l'orario della   |
+//|      notizia, aggiornando in tempo reale massimo e minimo;        |
+//|   2) pochi secondi prima dell'orario (default 3) congela il       |
+//|      range e piazza due ordini pendenti in OCO:                   |
 //|        - Buy Stop = massimo range + X pips                        |
 //|        - Sell Stop = minimo range - X pips                        |
-//|   3) quando uno dei due ordini viene eseguito, cancella l'altro;  |
-//|   4) se nessuno dei due scatta entro un tempo massimo dalla       |
-//|      notizia, cancella entrambi gli ordini pendenti.              |
+//|   3) quando uno dei due scatta, cancella l'altro;                 |
+//|   4) se nessuno dei due scatta entro un tempo massimo, li          |
+//|      cancella entrambi;                                           |
+//|   5) sulla posizione aperta, se impostata una chiusura parziale,  |
+//|      chiude una percentuale al target indicato e (opzionale)      |
+//|      sposta lo Stop Loss a pareggio sul resto.                    |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "2.00"
+#property version   "3.00"
 #property strict
 
 #include <Trade\Trade.mqh>
 
 //================================= INPUT ==================================
+//  Questi sono solo i valori di DEFAULT al primo avvio: tutto e'      //
+//  comunque modificabile in qualsiasi momento dal pannello sul       //
+//  grafico, senza dover rimuovere/riattaccare l'EA.                  //
 
-input group "=== Modalita' ==="
-input bool   InpAutoFetchFromCalendar = true;  // true = prende le date da NFP/FOMC in automatico dal Calendario Economico di MT5
-input bool   InpListUSEventsOnInit   = false;  // true = stampa nel log tutti gli eventi USA del calendario (utile per trovare la keyword esatta)
+input group "=== NFP (14:30 ora italiana) ==="
+input string InpNFPDefaultDate       = "2026.09.04"; // Data del prossimo NFP (AAAA.MM.GG)
 
-input group "=== NFP ==="
-input bool   InpEnableNFP            = true;   // Abilita gli eventi NFP
-input string InpNFPCountryCode       = "US";   // Codice paese nel Calendario Economico
-input string InpNFPKeyword           = "Nonfarm Payrolls"; // Parola chiave nel nome evento (solo modalita' automatica)
-input string InpNFPDatesManual       = "2026.09.04, 2026.10.02, 2026.11.06, 2026.12.04"; // Date NFP, solo se InpAutoFetchFromCalendar=false
-input string InpNFPTimeItaly         = "14:30"; // Orario italiano NFP, solo modalita' manuale
+input group "=== FOMC (20:00 ora italiana) ==="
+input string InpFOMCDefaultDate      = "2026.09.17"; // Data del prossimo FOMC (AAAA.MM.GG)
 
-input group "=== FOMC ==="
-input bool   InpEnableFOMC           = true;   // Abilita gli eventi FOMC
-input string InpFOMCCountryCode      = "US";   // Codice paese nel Calendario Economico
-input string InpFOMCKeyword          = "Interest Rate Decision"; // Parola chiave nel nome evento (solo modalita' automatica)
-input string InpFOMCDatesManual      = "2026.09.17, 2026.11.05, 2026.12.17"; // Date FOMC, solo se InpAutoFetchFromCalendar=false
-input string InpFOMCTimeItaly        = "20:00"; // Orario italiano FOMC, solo modalita' manuale
-
-input group "=== Calendario automatico ==="
-input int    InpCalendarLookaheadDays = 45;    // Giorni in avanti in cui cercare i prossimi eventi
-input int    InpCalendarRefreshHours  = 6;     // Ogni quante ore ricontrollare il calendario per nuove date
-
-input group "=== Fuso orario (solo modalita' manuale) ==="
+input group "=== Fuso orario ==="
 input int    InpServerMinusItalyMin  = 60;   // Differenza in MINUTI tra orario server del broker e orario italiano
 
 input group "=== Finestra di osservazione ==="
 input int    InpLookbackMinutes      = 10;   // Minuti da guardare prima della notizia (10 = 2 candele M5)
 input int    InpSecondsBeforeNews    = 3;    // Secondi prima della notizia in cui si congela il range e si piazzano gli ordini
 
-input group "=== Ordini pendenti ==="
+input group "=== Ordini pendenti (default, modificabili dal pannello) ==="
 input double InpPipsDistance         = 3.0;  // Distanza in pips tra massimo/minimo e prezzo di entrata
 input double InpLotSize              = 0.10; // Lotti per ogni ordine
 input double InpStopLossPips         = 20.0; // Stop Loss in pips (0 = nessuno)
-input double InpTakeProfitPips       = 0.0;  // Take Profit in pips (0 = nessuno)
-input int    InpExpirationMinutes    = 15;   // Minuti dopo la notizia dopo i quali annullare gli ordini non eseguiti
+input double InpTakeProfitPips       = 0.0;  // Take Profit finale in pips (0 = nessuno)
+input double InpPartialClosePercent  = 50.0; // % di posizione da chiudere al target parziale (0 = disabilitata)
+input double InpPartialTriggerPips   = 15.0; // Pips di profitto per far scattare la chiusura parziale
+input bool   InpMoveToBreakevenAfterPartial = true; // Sposta lo Stop Loss a pareggio dopo la chiusura parziale
+input int    InpExpirationMinutes    = 15;   // Minuti dopo la notizia dopo cui annullare gli ordini non eseguiti
 input int    InpSlippagePoints       = 50;   // Deviazione massima in punti per l'invio ordini
 input ulong  InpMagicNumber          = 20260825; // Magic number
 
@@ -76,29 +70,91 @@ input int    InpPanelY               = 20;   // Posizione verticale del pannello
 
 enum EventState
   {
-   STATE_WAITING = 0, // in attesa, si aggiorna il range
-   STATE_ARMED   = 1, // ordini piazzati, in attesa di esecuzione o scadenza
-   STATE_DONE    = 2  // evento concluso
+   STATE_WAITING  = 0, // in attesa, si aggiorna il range
+   STATE_ARMED    = 1, // ordini pendenti piazzati, in attesa di esecuzione/scadenza
+   STATE_POSITION = 2, // una posizione e' aperta, gestione parziale/BE in corso
+   STATE_DONE     = 3  // evento concluso
   };
 
-struct NewsEvent
+struct CategoryState
   {
-   datetime    time;
+   bool        active;
    string      label;
+   datetime    time;
    EventState  state;
    double      rangeHigh;
    double      rangeLow;
    bool        rangeValid;
    ulong       buyTicket;
    ulong       sellTicket;
+   ulong       positionTicket;
+   bool        partialDone;
   };
 
-NewsEvent   g_events[];
-int         g_activeIndex = -1;
-datetime    g_lastCalendarRefresh = 0;
-bool        g_tradingEnabledRuntime = true;
-string      g_panelPrefix = "NSE_";
-CTrade      trade;
+CategoryState g_nfp;
+CategoryState g_fomc;
+
+bool     g_tradingEnabledRuntime = true;
+bool     g_moveToBreakeven       = true;
+double   g_pipsDistance          = 3.0;
+double   g_lotSize               = 0.10;
+double   g_slPips                = 20.0;
+double   g_tpPips                = 0.0;
+double   g_partialPercent        = 50.0;
+double   g_partialTriggerPips    = 15.0;
+
+string   g_panelPrefix = "NSE_";
+CTrade   trade;
+
+//+------------------------------------------------------------------+
+//| Azzera una categoria (NFP o FOMC)                                  |
+//+------------------------------------------------------------------+
+void ResetCategory(CategoryState &cat, const string label)
+  {
+   cat.active         = false;
+   cat.label          = label;
+   cat.time           = 0;
+   cat.state          = STATE_WAITING;
+   cat.rangeHigh      = -1;
+   cat.rangeLow       = -1;
+   cat.rangeValid     = false;
+   cat.buyTicket      = 0;
+   cat.sellTicket     = 0;
+   cat.positionTicket = 0;
+   cat.partialDone    = false;
+  }
+
+//+------------------------------------------------------------------+
+//| Imposta/riarma una categoria con una nuova data (AAAA.MM.GG) e     |
+//| l'orario italiano fisso della categoria (es. "14:30" o "20:00")    |
+//+------------------------------------------------------------------+
+bool ArmCategory(CategoryState &cat, string dateStr, const string timeItaly)
+  {
+   StringTrimLeft(dateStr);
+   StringTrimRight(dateStr);
+   if(dateStr == "")
+     {
+      PrintFormat("NewsStraddleEA [%s]: nessuna data inserita, categoria disattivata.", cat.label);
+      ResetCategory(cat, cat.label);
+      return(false);
+     }
+
+   datetime italyTime = StringToTime(dateStr + " " + timeItaly);
+   if(italyTime <= 0)
+     {
+      PrintFormat("NewsStraddleEA [%s]: data non valida '%s' (usa il formato AAAA.MM.GG).", cat.label, dateStr);
+      return(false);
+     }
+
+   datetime serverTime = italyTime + InpServerMinusItalyMin * 60;
+
+   ResetCategory(cat, cat.label);
+   cat.time   = serverTime;
+   cat.active = true;
+
+   PrintFormat("NewsStraddleEA [%s]: evento impostato -> %s (orario server)", cat.label, TimeToString(serverTime, TIME_DATE | TIME_MINUTES));
+   return(true);
+  }
 
 //+------------------------------------------------------------------+
 int OnInit()
@@ -108,23 +164,26 @@ int OnInit()
    trade.SetTypeFillingBySymbol(_Symbol);
 
    g_tradingEnabledRuntime = InpEnableTrading;
+   g_moveToBreakeven       = InpMoveToBreakevenAfterPartial;
+   g_pipsDistance          = InpPipsDistance;
+   g_lotSize               = InpLotSize;
+   g_slPips                = InpStopLossPips;
+   g_tpPips                = InpTakeProfitPips;
+   g_partialPercent        = InpPartialClosePercent;
+   g_partialTriggerPips    = InpPartialTriggerPips;
 
-   if(InpListUSEventsOnInit)
-      DumpCountryEvents("US");
+   ResetCategory(g_nfp, "NFP");
+   ResetCategory(g_fomc, "FOMC");
 
-   ArrayResize(g_events, 0);
-   RefreshEvents();
-   g_lastCalendarRefresh = TimeCurrent();
-
-   if(ArraySize(g_events) == 0)
-     {
-      Print("NewsStraddleEA: nessun evento valido trovato. Se sei in modalita' automatica, controlla che il Calendario Economico sia attivo in MT5 (Vista -> Calendario Economico) e che le keyword siano corrette (prova InpListUSEventsOnInit=true).");
-      return(INIT_PARAMETERS_INCORRECT);
-     }
+   if(StringLen(InpNFPDefaultDate) > 0)
+      ArmCategory(g_nfp, InpNFPDefaultDate, "14:30");
+   if(StringLen(InpFOMCDefaultDate) > 0)
+      ArmCategory(g_fomc, InpFOMCDefaultDate, "20:00");
 
    EventSetTimer(1);
    CreatePanel();
-   Print("NewsStraddleEA inizializzato con ", ArraySize(g_events), " evento/i.");
+
+   Print("NewsStraddleEA inizializzato.");
    return(INIT_SUCCEEDED);
   }
 
@@ -133,199 +192,6 @@ void OnDeinit(const int reason)
   {
    EventKillTimer();
    DestroyPanel();
-  }
-
-//+------------------------------------------------------------------+
-//| Stampa nel log tutti gli eventi di un paese, per trovare la       |
-//| keyword esatta da usare in InpNFPKeyword / InpFOMCKeyword          |
-//+------------------------------------------------------------------+
-void DumpCountryEvents(const string countryCode)
-  {
-   MqlCalendarEvent events[];
-   int total = CalendarEventByCountry(countryCode, events);
-   PrintFormat("NewsStraddleEA: %d eventi trovati nel Calendario per il paese '%s':", total, countryCode);
-   for(int i = 0; i < total; i++)
-      PrintFormat("   id=%I64u  importance=%d  name='%s'", events[i].id, (int)events[i].importance, events[i].name);
-  }
-
-//+------------------------------------------------------------------+
-//| Cerca nel Calendario Economico l'evento il cui nome contiene la   |
-//| keyword indicata (case-insensitive) per il paese specificato.     |
-//+------------------------------------------------------------------+
-bool FindEventId(const string countryCode, const string keyword, ulong &eventId)
-  {
-   MqlCalendarEvent events[];
-   int total = CalendarEventByCountry(countryCode, events);
-   if(total <= 0)
-      return(false);
-
-   string kw = keyword;
-   StringToLower(kw);
-
-   for(int i = 0; i < total; i++)
-     {
-      string name = events[i].name;
-      StringToLower(name);
-      if(StringFind(name, kw) >= 0)
-        {
-         eventId = events[i].id;
-         return(true);
-        }
-     }
-   return(false);
-  }
-
-//+------------------------------------------------------------------+
-//| true se esiste gia' un evento della stessa categoria entro 12h    |
-//| dall'orario indicato (evita doppioni tra un refresh e l'altro)    |
-//+------------------------------------------------------------------+
-bool AlreadyTracked(const string label, datetime t)
-  {
-   int total = ArraySize(g_events);
-   for(int i = 0; i < total; i++)
-     {
-      if(g_events[i].label == label && MathAbs((long)(g_events[i].time - t)) < 12 * 3600)
-         return(true);
-     }
-   return(false);
-  }
-
-//+------------------------------------------------------------------+
-//| Aggiunge un evento a g_events                                     |
-//+------------------------------------------------------------------+
-void AppendEvent(const datetime serverTime, const string label)
-  {
-   int idx = ArraySize(g_events);
-   ArrayResize(g_events, idx + 1);
-   g_events[idx].time       = serverTime;
-   g_events[idx].label      = label;
-   g_events[idx].state      = STATE_WAITING;
-   g_events[idx].rangeHigh  = -1;
-   g_events[idx].rangeLow   = -1;
-   g_events[idx].rangeValid = false;
-   g_events[idx].buyTicket  = 0;
-   g_events[idx].sellTicket = 0;
-  }
-
-//+------------------------------------------------------------------+
-//| Recupera dal Calendario Economico i prossimi eventi di una        |
-//| categoria e li aggiunge a g_events (converte da GMT a orario      |
-//| server del broker automaticamente, senza bisogno di input manuali)|
-//+------------------------------------------------------------------+
-void RefreshCategoryFromCalendar(const string countryCode, const string keyword, const string label)
-  {
-   ulong eventId;
-   if(!FindEventId(countryCode, keyword, eventId))
-     {
-      PrintFormat("NewsStraddleEA [%s]: nessun evento trovato nel Calendario con keyword '%s' per il paese '%s'. Attiva InpListUSEventsOnInit per vedere i nomi disponibili.", label, keyword, countryCode);
-      return;
-     }
-
-   MqlCalendarValue values[];
-   datetime fromUTC = TimeGMT() - 3600;
-   datetime toUTC   = TimeGMT() + InpCalendarLookaheadDays * 24 * 3600;
-   int total = CalendarValueHistoryByEvent(eventId, values, fromUTC, toUTC);
-   if(total <= 0)
-     {
-      PrintFormat("NewsStraddleEA [%s]: il Calendario non ha ancora pubblicato date future per questo evento, riprovo al prossimo refresh.", label);
-      return;
-     }
-
-   long offsetSec = (long)TimeCurrent() - (long)TimeGMT();
-
-   for(int i = 0; i < total; i++)
-     {
-      datetime serverTime = values[i].time + offsetSec;
-
-      if(serverTime + InpExpirationMinutes * 60 < TimeCurrent())
-         continue; // già passato
-
-      if(AlreadyTracked(label, serverTime))
-         continue;
-
-      AppendEvent(serverTime, label);
-      PrintFormat("NewsStraddleEA [%s]: evento trovato dal Calendario -> %s (orario server)", label, TimeToString(serverTime, TIME_DATE | TIME_MINUTES));
-     }
-  }
-
-//+------------------------------------------------------------------+
-//| Aggiunge eventi inseriti a mano (modalita' manuale/fallback)      |
-//+------------------------------------------------------------------+
-void AddManualEvents(const string datesList, const string timeItaly, const string label)
-  {
-   string dates[];
-   int n = StringSplit(datesList, ',', dates);
-
-   for(int i = 0; i < n; i++)
-     {
-      string d = dates[i];
-      StringTrimLeft(d);
-      StringTrimRight(d);
-      if(d == "")
-         continue;
-
-      datetime italyTime = StringToTime(d + " " + timeItaly);
-      if(italyTime <= 0)
-        {
-         Print("NewsStraddleEA [", label, "]: data non valida ignorata: '", d, "'");
-         continue;
-        }
-
-      datetime serverTime = italyTime + InpServerMinusItalyMin * 60;
-
-      if(serverTime + InpExpirationMinutes * 60 < TimeCurrent())
-        {
-         Print("NewsStraddleEA [", label, "]: evento già passato ignorato: ", TimeToString(serverTime));
-         continue;
-        }
-
-      if(AlreadyTracked(label, serverTime))
-         continue;
-
-      AppendEvent(serverTime, label);
-      PrintFormat("NewsStraddleEA [%s]: evento manuale programmato -> %s (orario server)", label, TimeToString(serverTime, TIME_DATE | TIME_MINUTES));
-     }
-  }
-
-//+------------------------------------------------------------------+
-//| Ordina g_events per data crescente (insertion sort, array piccoli)|
-//+------------------------------------------------------------------+
-void SortEvents()
-  {
-   int total = ArraySize(g_events);
-   for(int i = 1; i < total; i++)
-     {
-      NewsEvent key = g_events[i];
-      int j = i - 1;
-      while(j >= 0 && g_events[j].time > key.time)
-        {
-         g_events[j + 1] = g_events[j];
-         j--;
-        }
-      g_events[j + 1] = key;
-     }
-  }
-
-//+------------------------------------------------------------------+
-//| Punto unico di aggiornamento della lista eventi                   |
-//+------------------------------------------------------------------+
-void RefreshEvents()
-  {
-   if(InpAutoFetchFromCalendar)
-     {
-      if(InpEnableNFP)
-         RefreshCategoryFromCalendar(InpNFPCountryCode, InpNFPKeyword, "NFP");
-      if(InpEnableFOMC)
-         RefreshCategoryFromCalendar(InpFOMCCountryCode, InpFOMCKeyword, "FOMC");
-     }
-   else
-     {
-      if(InpEnableNFP)
-         AddManualEvents(InpNFPDatesManual, InpNFPTimeItaly, "NFP");
-      if(InpEnableFOMC)
-         AddManualEvents(InpFOMCDatesManual, InpFOMCTimeItaly, "FOMC");
-     }
-   SortEvents();
   }
 
 //+------------------------------------------------------------------+
@@ -342,9 +208,9 @@ double PipSize()
 
 //+------------------------------------------------------------------+
 //| Aggiorna massimo/minimo delle candele M5 nella finestra           |
-//| [news.time - LookbackMinutes*60, news.time)                       |
+//| [orario_evento - LookbackMinutes*60, orario_evento)               |
 //+------------------------------------------------------------------+
-bool UpdateRange(NewsEvent &ev)
+bool UpdateRange(CategoryState &cat)
   {
    int barsNeeded = MathMax(InpLookbackMinutes / 5 + 5, 10);
 
@@ -354,8 +220,8 @@ bool UpdateRange(NewsEvent &ev)
    if(copied <= 0)
       return(false);
 
-   datetime windowStart = ev.time - InpLookbackMinutes * 60;
-   datetime windowEnd   = ev.time; // esclusivo
+   datetime windowStart = cat.time - InpLookbackMinutes * 60;
+   datetime windowEnd   = cat.time; // esclusivo
 
    double high = -1, low = -1;
    bool found = false;
@@ -380,9 +246,9 @@ bool UpdateRange(NewsEvent &ev)
 
    if(found)
      {
-      ev.rangeHigh  = high;
-      ev.rangeLow   = low;
-      ev.rangeValid = true;
+      cat.rangeHigh  = high;
+      cat.rangeLow   = low;
+      cat.rangeValid = true;
      }
 
    return(found);
@@ -403,26 +269,26 @@ double NormalizeVolume(double volume)
   }
 
 //+------------------------------------------------------------------+
-//| Piazza i due ordini pendenti (Buy Stop / Sell Stop) per l'evento  |
+//| Piazza i due ordini pendenti (Buy Stop / Sell Stop)                |
 //+------------------------------------------------------------------+
-void PlaceOrders(NewsEvent &ev)
+void PlaceOrders(CategoryState &cat)
   {
-   if(!ev.rangeValid)
+   if(!cat.rangeValid)
      {
-      Print("NewsStraddleEA [", ev.label, "]: range non valido per l'evento ", TimeToString(ev.time), ", ordini NON piazzati.");
-      ev.state = STATE_DONE;
+      PrintFormat("NewsStraddleEA [%s]: range non valido, ordini NON piazzati.", cat.label);
+      cat.state  = STATE_DONE;
+      cat.active = false;
       return;
      }
 
    double point  = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
    int    digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
    double pip    = PipSize();
-   double dist   = InpPipsDistance * pip;
+   double dist   = g_pipsDistance * pip;
 
-   double buyPrice  = NormalizeDouble(ev.rangeHigh + dist, digits);
-   double sellPrice = NormalizeDouble(ev.rangeLow  - dist, digits);
+   double buyPrice  = NormalizeDouble(cat.rangeHigh + dist, digits);
+   double sellPrice = NormalizeDouble(cat.rangeLow  - dist, digits);
 
-   // rispetta la distanza minima del broker (stop level)
    long stopLevelPts = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL);
    double stopLevel  = stopLevelPts * point;
    double ask = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
@@ -437,44 +303,45 @@ void PlaceOrders(NewsEvent &ev)
      }
 
    double sl_buy = 0, tp_buy = 0, sl_sell = 0, tp_sell = 0;
-   if(InpStopLossPips > 0)
+   if(g_slPips > 0)
      {
-      sl_buy  = NormalizeDouble(buyPrice  - InpStopLossPips * pip, digits);
-      sl_sell = NormalizeDouble(sellPrice + InpStopLossPips * pip, digits);
+      sl_buy  = NormalizeDouble(buyPrice  - g_slPips * pip, digits);
+      sl_sell = NormalizeDouble(sellPrice + g_slPips * pip, digits);
      }
-   if(InpTakeProfitPips > 0)
+   if(g_tpPips > 0)
      {
-      tp_buy  = NormalizeDouble(buyPrice  + InpTakeProfitPips * pip, digits);
-      tp_sell = NormalizeDouble(sellPrice - InpTakeProfitPips * pip, digits);
+      tp_buy  = NormalizeDouble(buyPrice  + g_tpPips * pip, digits);
+      tp_sell = NormalizeDouble(sellPrice - g_tpPips * pip, digits);
      }
 
-   double volume = NormalizeVolume(InpLotSize);
-   datetime expiration = ev.time + InpExpirationMinutes * 60;
+   double volume = NormalizeVolume(g_lotSize);
+   datetime expiration = cat.time + InpExpirationMinutes * 60;
 
-   PrintFormat("NewsStraddleEA [%s]: evento %s -> range [%s , %s], BuyStop=%s SellStop=%s",
-               ev.label, TimeToString(ev.time), DoubleToString(ev.rangeLow, digits), DoubleToString(ev.rangeHigh, digits),
+   PrintFormat("NewsStraddleEA [%s]: range [%s , %s], BuyStop=%s SellStop=%s",
+               cat.label, DoubleToString(cat.rangeLow, digits), DoubleToString(cat.rangeHigh, digits),
                DoubleToString(buyPrice, digits), DoubleToString(sellPrice, digits));
 
    if(!g_tradingEnabledRuntime)
      {
-      Print("NewsStraddleEA: trading disabilitato (input o pulsante pannello), ordini NON inviati (modalita' simulazione).");
-      ev.state = STATE_DONE;
+      Print("NewsStraddleEA: trading disabilitato (pannello), ordini NON inviati (simulazione).");
+      cat.state  = STATE_DONE;
+      cat.active = false;
       return;
      }
 
-   string cmt = ev.label + " " + TimeToString(ev.time, TIME_DATE | TIME_MINUTES);
+   string cmt = cat.label + " " + TimeToString(cat.time, TIME_DATE | TIME_MINUTES);
 
    if(trade.BuyStop(volume, buyPrice, _Symbol, sl_buy, tp_buy, ORDER_TIME_SPECIFIED, expiration, cmt))
-      ev.buyTicket = trade.ResultOrder();
+      cat.buyTicket = trade.ResultOrder();
    else
       PrintFormat("NewsStraddleEA: errore invio BuyStop: %d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
 
    if(trade.SellStop(volume, sellPrice, _Symbol, sl_sell, tp_sell, ORDER_TIME_SPECIFIED, expiration, cmt))
-      ev.sellTicket = trade.ResultOrder();
+      cat.sellTicket = trade.ResultOrder();
    else
       PrintFormat("NewsStraddleEA: errore invio SellStop: %d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
 
-   ev.state = STATE_ARMED;
+   cat.state = STATE_ARMED;
   }
 
 //+------------------------------------------------------------------+
@@ -488,97 +355,184 @@ bool OrderStillPending(ulong ticket)
   }
 
 //+------------------------------------------------------------------+
-//| Gestisce OCO e scadenza per un evento in stato ARMED               |
+//| Gestisce OCO e scadenza mentre gli ordini sono pendenti (ARMED)   |
 //+------------------------------------------------------------------+
-void ManageArmedEvent(NewsEvent &ev)
+void ManageArmedCategory(CategoryState &cat)
   {
-   bool buyPending  = OrderStillPending(ev.buyTicket);
-   bool sellPending = OrderStillPending(ev.sellTicket);
+   bool buyPending  = OrderStillPending(cat.buyTicket);
+   bool sellPending = OrderStillPending(cat.sellTicket);
 
-   // se uno dei due ordini non e' piu' pendente (eseguito o rimosso) e l'altro si',
-   // cancella l'ordine rimasto perche' inutile (logica OCO)
-   if(ev.buyTicket != 0 && !buyPending && sellPending)
+   if(cat.buyTicket != 0 && !buyPending && sellPending)
      {
-      trade.OrderDelete(ev.sellTicket);
-      ev.state = STATE_DONE;
-      Print("NewsStraddleEA [", ev.label, "]: BuyStop eseguito/rimosso, cancellato SellStop residuo.");
+      trade.OrderDelete(cat.sellTicket);
+      cat.state = STATE_POSITION;
+      PrintFormat("NewsStraddleEA [%s]: BuyStop eseguito, SellStop annullato.", cat.label);
       return;
      }
-   if(ev.sellTicket != 0 && !sellPending && buyPending)
+   if(cat.sellTicket != 0 && !sellPending && buyPending)
      {
-      trade.OrderDelete(ev.buyTicket);
-      ev.state = STATE_DONE;
-      Print("NewsStraddleEA [", ev.label, "]: SellStop eseguito/rimosso, cancellato BuyStop residuo.");
+      trade.OrderDelete(cat.buyTicket);
+      cat.state = STATE_POSITION;
+      PrintFormat("NewsStraddleEA [%s]: SellStop eseguito, BuyStop annullato.", cat.label);
       return;
      }
    if(!buyPending && !sellPending)
      {
-      ev.state = STATE_DONE;
+      cat.state = STATE_POSITION; // ManagePosition capira' se esiste davvero una posizione
       return;
      }
 
-   // scadenza di sicurezza lato EA (oltre a quella impostata sull'ordine stesso)
-   if(TimeCurrent() - ev.time > InpExpirationMinutes * 60)
+   if(TimeCurrent() - cat.time > InpExpirationMinutes * 60)
      {
-      if(buyPending)  trade.OrderDelete(ev.buyTicket);
-      if(sellPending) trade.OrderDelete(ev.sellTicket);
-      ev.state = STATE_DONE;
-      Print("NewsStraddleEA [", ev.label, "]: scaduta finestra post-notizia, ordini pendenti residui cancellati.");
+      if(buyPending)  trade.OrderDelete(cat.buyTicket);
+      if(sellPending) trade.OrderDelete(cat.sellTicket);
+      cat.state = STATE_POSITION;
+      PrintFormat("NewsStraddleEA [%s]: scaduto, ordini pendenti residui cancellati.", cat.label);
      }
   }
 
 //+------------------------------------------------------------------+
-//| Avanza la macchina a stati per l'evento attualmente attivo        |
+//| true se il ticket di posizione e' gia' tracciato da un'altra      |
+//| categoria (evita che NFP e FOMC si "rubino" la stessa posizione)  |
 //+------------------------------------------------------------------+
-void ProcessEvents()
+bool PositionAlreadyOwned(ulong ticket)
   {
-   int total = ArraySize(g_events);
-   if(total == 0)
-      return;
+   return(ticket == g_nfp.positionTicket || ticket == g_fomc.positionTicket);
+  }
 
-   if(g_activeIndex < 0 || g_activeIndex >= total || g_events[g_activeIndex].state == STATE_DONE)
+//+------------------------------------------------------------------+
+//| Trova/gestisce la posizione aperta dell'evento: chiusura          |
+//| parziale al target e spostamento a pareggio                       |
+//+------------------------------------------------------------------+
+void ManagePosition(CategoryState &cat)
+  {
+   if(cat.positionTicket == 0)
      {
-      g_activeIndex = -1;
-      for(int i = 0; i < total; i++)
+      for(int i = 0; i < PositionsTotal(); i++)
         {
-         if(g_events[i].state != STATE_DONE)
-           {
-            g_activeIndex = i;
-            break;
-           }
+         ulong ticket = PositionGetTicket(i);
+         if(ticket == 0 || !PositionSelectByTicket(ticket))
+            continue;
+         if(PositionGetInteger(POSITION_MAGIC) != (long)InpMagicNumber)
+            continue;
+         if(PositionGetString(POSITION_SYMBOL) != _Symbol)
+            continue;
+         if(PositionAlreadyOwned(ticket))
+            continue;
+
+         cat.positionTicket = ticket;
+         cat.partialDone    = false;
+         break;
         }
-      if(g_activeIndex < 0)
-         return; // tutti gli eventi conclusi
+
+      if(cat.positionTicket == 0)
+        {
+         // nessuno dei due ordini e' mai scattato
+         cat.state  = STATE_DONE;
+         cat.active = false;
+         return;
+        }
      }
 
-   NewsEvent ev = g_events[g_activeIndex];
-
-   if(ev.state == STATE_WAITING)
+   if(!PositionSelectByTicket(cat.positionTicket))
      {
-      datetime now = TimeCurrent();
-      int secToNews = (int)(ev.time - now);
+      PrintFormat("NewsStraddleEA [%s]: posizione chiusa.", cat.label);
+      cat.positionTicket = 0;
+      cat.state  = STATE_DONE;
+      cat.active = false;
+      return;
+     }
+
+   if(g_partialPercent > 0 && !cat.partialDone)
+     {
+      double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
+      long   posType   = PositionGetInteger(POSITION_TYPE);
+      double pip       = PipSize();
+      double curPrice  = (posType == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+      double profitPips = (posType == POSITION_TYPE_BUY) ? (curPrice - openPrice) / pip : (openPrice - curPrice) / pip;
+
+      if(profitPips >= g_partialTriggerPips)
+        {
+         double vol      = PositionGetDouble(POSITION_VOLUME);
+         double closeVol = NormalizeVolume(vol * g_partialPercent / 100.0);
+
+         if(closeVol > 0 && closeVol < vol)
+           {
+            if(trade.PositionClosePartial(cat.positionTicket, closeVol))
+              {
+               cat.partialDone = true;
+               PrintFormat("NewsStraddleEA [%s]: chiusura parziale %.1f%% eseguita a +%.1f pips.", cat.label, g_partialPercent, profitPips);
+
+               if(g_moveToBreakeven && PositionSelectByTicket(cat.positionTicket))
+                  trade.PositionModify(cat.positionTicket, openPrice, PositionGetDouble(POSITION_TP));
+              }
+            else
+               PrintFormat("NewsStraddleEA [%s]: errore chiusura parziale: %d %s", cat.label, trade.ResultRetcode(), trade.ResultRetcodeDescription());
+           }
+        }
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Annulla manualmente una categoria: cancella ordini pendenti e     |
+//| chiude l'eventuale posizione aperta (pulsante di emergenza)       |
+//+------------------------------------------------------------------+
+void CancelCategory(CategoryState &cat)
+  {
+   if(!cat.active)
+     {
+      PrintFormat("NewsStraddleEA [%s]: nessun evento attivo da annullare.", cat.label);
+      return;
+     }
+
+   if(cat.buyTicket != 0 && OrderStillPending(cat.buyTicket))
+      trade.OrderDelete(cat.buyTicket);
+   if(cat.sellTicket != 0 && OrderStillPending(cat.sellTicket))
+      trade.OrderDelete(cat.sellTicket);
+   if(cat.positionTicket != 0 && PositionSelectByTicket(cat.positionTicket))
+      trade.PositionClose(cat.positionTicket);
+
+   cat.state  = STATE_DONE;
+   cat.active = false;
+   PrintFormat("NewsStraddleEA [%s]: annullato manualmente dal pannello.", cat.label);
+  }
+
+//+------------------------------------------------------------------+
+//| Avanza la macchina a stati di una categoria                       |
+//+------------------------------------------------------------------+
+void ProcessCategory(CategoryState &cat)
+  {
+   if(!cat.active)
+      return;
+
+   if(cat.state == STATE_WAITING)
+     {
+      long secToNews = (long)(cat.time - TimeCurrent());
 
       if(secToNews > InpSecondsBeforeNews)
         {
-         UpdateRange(ev);
+         UpdateRange(cat);
         }
       else if(secToNews > -60) // margine di tolleranza se il timer/tick arriva in ritardo
         {
-         UpdateRange(ev); // ultimo aggiornamento prima di congelare il range
-         PlaceOrders(ev);
+         UpdateRange(cat);
+         PlaceOrders(cat);
         }
       else
         {
-         Print("NewsStraddleEA [", ev.label, "]: evento ", TimeToString(ev.time), " perso (EA avviato troppo tardi), saltato.");
-         ev.state = STATE_DONE;
+         PrintFormat("NewsStraddleEA [%s]: evento perso (EA avviato troppo tardi), disattivato.", cat.label);
+         cat.state  = STATE_DONE;
+         cat.active = false;
         }
      }
-   else if(ev.state == STATE_ARMED)
+   else if(cat.state == STATE_ARMED)
      {
-      ManageArmedEvent(ev);
+      ManageArmedCategory(cat);
      }
-
-   g_events[g_activeIndex] = ev;
+   else if(cat.state == STATE_POSITION)
+     {
+      ManagePosition(cat);
+     }
   }
 
 //+------------------------------------------------------------------+
@@ -599,6 +553,31 @@ void PanelSetLabel(const string name, const int x, const int y, const string tex
      }
    ObjectSetString(0, name, OBJPROP_TEXT, text);
    ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
+  }
+
+//+------------------------------------------------------------------+
+//| Crea un campo di testo modificabile del pannello (una tantum:     |
+//| non va MAI ri-creato/sovrascritto da UpdatePanel, altrimenti      |
+//| cancelleremmo quello che l'utente sta scrivendo)                  |
+//+------------------------------------------------------------------+
+void PanelSetEdit(const string name, const int x, const int y, const int w, const int h, const string defaultText)
+  {
+   if(ObjectFind(0, name) < 0)
+     {
+      ObjectCreate(0, name, OBJ_EDIT, 0, 0, 0);
+      ObjectSetInteger(0, name, OBJPROP_CORNER, CORNER_LEFT_UPPER);
+      ObjectSetInteger(0, name, OBJPROP_XDISTANCE, x);
+      ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
+      ObjectSetInteger(0, name, OBJPROP_XSIZE, w);
+      ObjectSetInteger(0, name, OBJPROP_YSIZE, h);
+      ObjectSetInteger(0, name, OBJPROP_FONTSIZE, PANEL_FONT);
+      ObjectSetInteger(0, name, OBJPROP_COLOR, clrBlack);
+      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrWhite);
+      ObjectSetInteger(0, name, OBJPROP_ALIGN, ALIGN_CENTER);
+      ObjectSetInteger(0, name, OBJPROP_SELECTABLE, true);
+      ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
+      ObjectSetString(0, name, OBJPROP_TEXT, defaultText);
+     }
   }
 
 //+------------------------------------------------------------------+
@@ -638,6 +617,36 @@ string FormatCountdown(long secs)
   }
 
 //+------------------------------------------------------------------+
+//| Testo di stato sintetico per una categoria                        |
+//+------------------------------------------------------------------+
+string CategoryStatusText(const CategoryState &cat)
+  {
+   if(!cat.active)
+      return("non impostato");
+
+   if(cat.state == STATE_WAITING)
+     {
+      long secsLeft = (long)(cat.time - TimeCurrent());
+      return StringFormat("%s - countdown %s", TimeToString(cat.time, TIME_DATE | TIME_MINUTES), FormatCountdown(secsLeft));
+     }
+   if(cat.state == STATE_ARMED)
+      return("ordini pendenti piazzati, in attesa");
+   if(cat.state == STATE_POSITION)
+      return(cat.partialDone ? "posizione aperta (parziale gia' fatto)" : "posizione aperta");
+   return("concluso");
+  }
+
+//+------------------------------------------------------------------+
+//| Testo del range per una categoria                                 |
+//+------------------------------------------------------------------+
+string CategoryRangeText(const CategoryState &cat)
+  {
+   if(!cat.active || !cat.rangeValid)
+      return("");
+   return StringFormat("   Range: H=%s  L=%s", DoubleToString(cat.rangeHigh, _Digits), DoubleToString(cat.rangeLow, _Digits));
+  }
+
+//+------------------------------------------------------------------+
 //| Aggiorna il testo del pulsante Trading ON/OFF                     |
 //+------------------------------------------------------------------+
 void UpdateTradingButton()
@@ -647,18 +656,38 @@ void UpdateTradingButton()
       return;
    if(g_tradingEnabledRuntime)
      {
-      ObjectSetString(0, name, OBJPROP_TEXT, "Trading: ON (clic per OFF)");
+      ObjectSetString(0, name, OBJPROP_TEXT, "Trading: ON");
       ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrDarkGreen);
      }
    else
      {
-      ObjectSetString(0, name, OBJPROP_TEXT, "Trading: OFF (clic per ON)");
+      ObjectSetString(0, name, OBJPROP_TEXT, "Trading: OFF");
       ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrFireBrick);
      }
   }
 
 //+------------------------------------------------------------------+
-//| Ricrea tutte le scritte del pannello con i dati aggiornati         |
+//| Aggiorna il testo del pulsante BE dopo parziale ON/OFF             |
+//+------------------------------------------------------------------+
+void UpdateBEButton()
+  {
+   string name = g_panelPrefix + "BtnBE";
+   if(ObjectFind(0, name) < 0)
+      return;
+   if(g_moveToBreakeven)
+     {
+      ObjectSetString(0, name, OBJPROP_TEXT, "BE dopo parziale: ON");
+      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrDarkGreen);
+     }
+   else
+     {
+      ObjectSetString(0, name, OBJPROP_TEXT, "BE dopo parziale: OFF");
+      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrFireBrick);
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Ricrea le scritte dinamiche del pannello (mai gli edit box!)      |
 //+------------------------------------------------------------------+
 void UpdatePanel()
   {
@@ -667,70 +696,24 @@ void UpdatePanel()
 
    int x = InpPanelX;
    int y = InpPanelY;
-   int line = 0;
 
-   PanelSetLabel(g_panelPrefix + "L0", x, y + (line++) * PANEL_LINE_H, "NewsStraddleEA - pannello di controllo", clrWhite);
-   PanelSetLabel(g_panelPrefix + "L1", x, y + (line++) * PANEL_LINE_H,
-                 g_tradingEnabledRuntime ? "Modalita': LIVE (invia ordini reali)" : "Modalita': SIMULAZIONE (nessun ordine)",
+   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * PANEL_LINE_H, "NewsStraddleEA - Dashboard", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * PANEL_LINE_H,
+                 g_tradingEnabledRuntime ? "Modalita': LIVE (invia ordini reali)" : "Modalita': SIMULAZIONE",
                  g_tradingEnabledRuntime ? clrOrange : clrLightGray);
 
-   int idx = g_activeIndex;
-   int total = ArraySize(g_events);
-   if(idx < 0 || idx >= total || g_events[idx].state == STATE_DONE)
-     {
-      idx = -1;
-      for(int i = 0; i < total; i++)
-         if(g_events[i].state != STATE_DONE) { idx = i; break; }
-     }
-
-   if(idx < 0)
-     {
-      PanelSetLabel(g_panelPrefix + "L2", x, y + (line++) * PANEL_LINE_H, "Nessun evento in coda", clrSilver);
-      PanelSetLabel(g_panelPrefix + "L3", x, y + (line++) * PANEL_LINE_H, "", clrSilver);
-      PanelSetLabel(g_panelPrefix + "L4", x, y + (line++) * PANEL_LINE_H, "", clrSilver);
-      PanelSetLabel(g_panelPrefix + "L5", x, y + (line++) * PANEL_LINE_H, "", clrSilver);
-     }
-   else
-     {
-      NewsEvent ev = g_events[idx];
-      PanelSetLabel(g_panelPrefix + "L2", x, y + (line++) * PANEL_LINE_H, StringFormat("Prossimo evento: %s", ev.label), clrYellow);
-      PanelSetLabel(g_panelPrefix + "L3", x, y + (line++) * PANEL_LINE_H,
-                    StringFormat("Orario server: %s", TimeToString(ev.time, TIME_DATE | TIME_MINUTES | TIME_SECONDS)), clrWhite);
-
-      string stateTxt; color stateClr;
-      if(ev.state == STATE_WAITING)
-        {
-         long secsLeft = (long)(ev.time - TimeCurrent());
-         stateTxt = StringFormat("In osservazione - countdown %s", FormatCountdown(secsLeft));
-         stateClr = clrAqua;
-        }
-      else
-        {
-         bool buyPending  = OrderStillPending(ev.buyTicket);
-         bool sellPending = OrderStillPending(ev.sellTicket);
-         stateTxt = StringFormat("ARMATO - BuyStop:%s SellStop:%s",
-                                  buyPending ? "pendente" : "chiuso/eseguito",
-                                  sellPending ? "pendente" : "chiuso/eseguito");
-         stateClr = clrLime;
-        }
-      PanelSetLabel(g_panelPrefix + "L4", x, y + (line++) * PANEL_LINE_H, stateTxt, stateClr);
-
-      string rangeTxt = ev.rangeValid
-                         ? StringFormat("Range: H=%s  L=%s", DoubleToString(ev.rangeHigh, _Digits), DoubleToString(ev.rangeLow, _Digits))
-                         : "Range: in attesa di dati...";
-      PanelSetLabel(g_panelPrefix + "L5", x, y + (line++) * PANEL_LINE_H, rangeTxt, clrWhite);
-     }
-
-   PanelSetLabel(g_panelPrefix + "L6", x, y + (line++) * PANEL_LINE_H, StringFormat("Eventi totali in coda: %d", total), clrSilver);
-   PanelSetLabel(g_panelPrefix + "L7", x, y + (line++) * PANEL_LINE_H,
-                 StringFormat("Ultimo refresh calendario: %s", TimeToString(g_lastCalendarRefresh, TIME_DATE | TIME_MINUTES)), clrSilver);
+   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * PANEL_LINE_H, "NFP: " + CategoryStatusText(g_nfp), clrYellow);
+   PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, CategoryRangeText(g_nfp), clrWhite);
+   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H, "FOMC: " + CategoryStatusText(g_fomc), clrYellow);
+   PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H, CategoryRangeText(g_fomc), clrWhite);
 
    UpdateTradingButton();
+   UpdateBEButton();
    ChartRedraw(0);
   }
 
 //+------------------------------------------------------------------+
-//| Crea lo sfondo e i pulsanti del pannello (una tantum)              |
+//| Crea tutti gli oggetti del pannello (una tantum, in OnInit)        |
 //+------------------------------------------------------------------+
 void CreatePanel()
   {
@@ -747,8 +730,8 @@ void CreatePanel()
       ObjectSetInteger(0, bg, OBJPROP_CORNER, CORNER_LEFT_UPPER);
       ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, x - 6);
       ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, y - 6);
-      ObjectSetInteger(0, bg, OBJPROP_XSIZE, 300);
-      ObjectSetInteger(0, bg, OBJPROP_YSIZE, 200);
+      ObjectSetInteger(0, bg, OBJPROP_XSIZE, 290);
+      ObjectSetInteger(0, bg, OBJPROP_YSIZE, 420);
       ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, C'20,20,20');
       ObjectSetInteger(0, bg, OBJPROP_BORDER_TYPE, BORDER_FLAT);
       ObjectSetInteger(0, bg, OBJPROP_COLOR, clrSilver);
@@ -757,9 +740,63 @@ void CreatePanel()
       ObjectSetInteger(0, bg, OBJPROP_HIDDEN, true);
      }
 
-   PanelSetButton(g_panelPrefix + "BtnTrading", x, y + 150, 140, 22, "", clrGray);
-   PanelSetButton(g_panelPrefix + "BtnRefresh", x + 150, y + 150, 140, 22, "Aggiorna calendario", clrDarkSlateGray);
-   PanelSetButton(g_panelPrefix + "BtnCancel",  x, y + 176, 290, 22, "Annulla ordini evento attivo", clrMaroon);
+   // -- Blocco stato (dinamico, gestito da UpdatePanel) --
+   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * PANEL_LINE_H, "NewsStraddleEA - Dashboard", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * PANEL_LINE_H, "", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * PANEL_LINE_H, "", clrYellow);
+   PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, "", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H, "", clrYellow);
+   PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H, "", clrWhite);
+
+   int by = y + 6 * PANEL_LINE_H + 10;
+
+   // -- Blocco impostazioni (editabile) --
+   PanelSetLabel(g_panelPrefix + "LblNFPDate", x, by, "Data NFP (AAAA.MM.GG):", clrSilver);
+   PanelSetEdit(g_panelPrefix + "EditNFPDate", x, by + 14, 140, 20, InpNFPDefaultDate);
+   PanelSetButton(g_panelPrefix + "BtnSetNFP", x + 150, by + 14, 130, 20, "Imposta NFP", clrDarkSlateGray);
+   by += 38;
+
+   PanelSetLabel(g_panelPrefix + "LblFOMCDate", x, by, "Data FOMC (AAAA.MM.GG):", clrSilver);
+   PanelSetEdit(g_panelPrefix + "EditFOMCDate", x, by + 14, 140, 20, InpFOMCDefaultDate);
+   PanelSetButton(g_panelPrefix + "BtnSetFOMC", x + 150, by + 14, 130, 20, "Imposta FOMC", clrDarkSlateGray);
+   by += 38;
+
+   PanelSetLabel(g_panelPrefix + "LblDist", x, by, "Distanza pips:", clrSilver);
+   PanelSetEdit(g_panelPrefix + "EditDist", x + 160, by - 2, 90, 20, DoubleToString(InpPipsDistance, 1));
+   by += 24;
+
+   PanelSetLabel(g_panelPrefix + "LblLot", x, by, "Lotto:", clrSilver);
+   PanelSetEdit(g_panelPrefix + "EditLot", x + 160, by - 2, 90, 20, DoubleToString(InpLotSize, 2));
+   by += 24;
+
+   PanelSetLabel(g_panelPrefix + "LblSL", x, by, "Stop Loss pips:", clrSilver);
+   PanelSetEdit(g_panelPrefix + "EditSL", x + 160, by - 2, 90, 20, DoubleToString(InpStopLossPips, 1));
+   by += 24;
+
+   PanelSetLabel(g_panelPrefix + "LblTP", x, by, "Take Profit pips:", clrSilver);
+   PanelSetEdit(g_panelPrefix + "EditTP", x + 160, by - 2, 90, 20, DoubleToString(InpTakeProfitPips, 1));
+   by += 24;
+
+   PanelSetLabel(g_panelPrefix + "LblPartPct", x, by, "Chiusura parziale %:", clrSilver);
+   PanelSetEdit(g_panelPrefix + "EditPartPct", x + 160, by - 2, 90, 20, DoubleToString(InpPartialClosePercent, 1));
+   by += 24;
+
+   PanelSetLabel(g_panelPrefix + "LblPartTrig", x, by, "Trigger parziale (pips):", clrSilver);
+   PanelSetEdit(g_panelPrefix + "EditPartTrig", x + 160, by - 2, 90, 20, DoubleToString(InpPartialTriggerPips, 1));
+   by += 30;
+
+   PanelSetButton(g_panelPrefix + "BtnApply", x, by, 260, 22, "Applica impostazioni", clrDarkSlateGray);
+   by += 30;
+
+   PanelSetButton(g_panelPrefix + "BtnTrading", x, by, 125, 22, "", clrGray);
+   PanelSetButton(g_panelPrefix + "BtnBE", x + 135, by, 125, 22, "", clrGray);
+   by += 28;
+
+   PanelSetButton(g_panelPrefix + "BtnCancelNFP", x, by, 125, 22, "Annulla NFP", clrMaroon);
+   PanelSetButton(g_panelPrefix + "BtnCancelFOMC", x + 135, by, 125, 22, "Annulla FOMC", clrMaroon);
+   by += 28;
+
+   ObjectSetInteger(0, bg, OBJPROP_YSIZE, (by - y) + 20);
 
    UpdatePanel();
   }
@@ -774,26 +811,28 @@ void DestroyPanel()
   }
 
 //+------------------------------------------------------------------+
-//| Cancella gli ordini pendenti dell'evento attualmente attivo        |
-//| (pulsante manuale di emergenza)                                    |
+//| Legge i campi editabili e aggiorna i parametri usati dall'EA      |
 //+------------------------------------------------------------------+
-void CancelActiveEventOrders()
+void ApplyPanelSettings()
   {
-   if(g_activeIndex < 0 || g_activeIndex >= ArraySize(g_events))
-     {
-      Print("NewsStraddleEA: nessun evento attivo da annullare.");
-      return;
-     }
+   string p = g_panelPrefix;
 
-   NewsEvent ev = g_events[g_activeIndex];
-   if(ev.buyTicket != 0 && OrderStillPending(ev.buyTicket))
-      trade.OrderDelete(ev.buyTicket);
-   if(ev.sellTicket != 0 && OrderStillPending(ev.sellTicket))
-      trade.OrderDelete(ev.sellTicket);
+   double dist     = StringToDouble(ObjectGetString(0, p + "EditDist", OBJPROP_TEXT));
+   double lot      = StringToDouble(ObjectGetString(0, p + "EditLot", OBJPROP_TEXT));
+   double sl       = StringToDouble(ObjectGetString(0, p + "EditSL", OBJPROP_TEXT));
+   double tp       = StringToDouble(ObjectGetString(0, p + "EditTP", OBJPROP_TEXT));
+   double partPct  = StringToDouble(ObjectGetString(0, p + "EditPartPct", OBJPROP_TEXT));
+   double partTrig = StringToDouble(ObjectGetString(0, p + "EditPartTrig", OBJPROP_TEXT));
 
-   ev.state = STATE_DONE;
-   g_events[g_activeIndex] = ev;
-   Print("NewsStraddleEA [", ev.label, "]: evento annullato manualmente dal pannello.");
+   g_pipsDistance       = (dist > 0) ? dist : InpPipsDistance;
+   g_lotSize            = (lot  > 0) ? lot  : InpLotSize;
+   g_slPips             = (sl   >= 0) ? sl  : 0;
+   g_tpPips             = (tp   >= 0) ? tp  : 0;
+   g_partialPercent     = (partPct  >= 0 && partPct  <= 100) ? partPct  : 0;
+   g_partialTriggerPips = (partTrig >= 0) ? partTrig : 0;
+
+   PrintFormat("NewsStraddleEA: impostazioni applicate -> distanza=%.1f lotto=%.2f SL=%.1f TP=%.1f parziale=%.1f%% trigger=%.1f pips",
+               g_pipsDistance, g_lotSize, g_slPips, g_tpPips, g_partialPercent, g_partialTriggerPips);
   }
 
 //+------------------------------------------------------------------+
@@ -804,23 +843,44 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
    if(id != CHARTEVENT_OBJECT_CLICK)
       return;
 
-   if(sparam == g_panelPrefix + "BtnTrading")
+   string p = g_panelPrefix;
+
+   if(sparam == p + "BtnTrading")
      {
       g_tradingEnabledRuntime = !g_tradingEnabledRuntime;
       ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-      Print("NewsStraddleEA: trading impostato dal pannello su ", g_tradingEnabledRuntime ? "ON" : "OFF");
      }
-   else if(sparam == g_panelPrefix + "BtnRefresh")
+   else if(sparam == p + "BtnBE")
+     {
+      g_moveToBreakeven = !g_moveToBreakeven;
+      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
+     }
+   else if(sparam == p + "BtnSetNFP")
      {
       ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-      RefreshEvents();
-      g_lastCalendarRefresh = TimeCurrent();
-      Print("NewsStraddleEA: refresh calendario forzato dal pannello.");
+      string d = ObjectGetString(0, p + "EditNFPDate", OBJPROP_TEXT);
+      ArmCategory(g_nfp, d, "14:30");
      }
-   else if(sparam == g_panelPrefix + "BtnCancel")
+   else if(sparam == p + "BtnSetFOMC")
      {
       ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-      CancelActiveEventOrders();
+      string d = ObjectGetString(0, p + "EditFOMCDate", OBJPROP_TEXT);
+      ArmCategory(g_fomc, d, "20:00");
+     }
+   else if(sparam == p + "BtnApply")
+     {
+      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
+      ApplyPanelSettings();
+     }
+   else if(sparam == p + "BtnCancelNFP")
+     {
+      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
+      CancelCategory(g_nfp);
+     }
+   else if(sparam == p + "BtnCancelFOMC")
+     {
+      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
+      CancelCategory(g_fomc);
      }
    else
       return;
@@ -831,18 +891,15 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
 //+------------------------------------------------------------------+
 void OnTimer()
   {
-   if(InpAutoFetchFromCalendar && TimeCurrent() - g_lastCalendarRefresh >= InpCalendarRefreshHours * 3600)
-     {
-      RefreshEvents();
-      g_lastCalendarRefresh = TimeCurrent();
-     }
-   ProcessEvents();
+   ProcessCategory(g_nfp);
+   ProcessCategory(g_fomc);
    UpdatePanel();
   }
 
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   ProcessEvents();
+   ProcessCategory(g_nfp);
+   ProcessCategory(g_fomc);
   }
 //+------------------------------------------------------------------+
