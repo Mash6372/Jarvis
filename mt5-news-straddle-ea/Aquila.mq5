@@ -2,10 +2,10 @@
 //|                                                    Aquila.mq5     |
 //|  AQUILA - sempre in prima linea, scatta al momento giusto.        |
 //|  Strategia "straddle sulle news" con due eventi indipendenti      |
-//|  (es. NFP e FOMC): l'orario si imposta dal pannello sul grafico,  |
-//|  vale per la giornata corrente (o il giorno dopo se gia' passato).|
-//|  Tutto il resto si controlla dallo stesso pannello: distanza in   |
-//|  pips, lotto, stop loss, take profit e chiusura parziale a target.|
+//|  (es. NFP e FOMC). Tutte le impostazioni si fanno nelle proprieta'|
+//|  dell'EA (Inputs): il pannello sul grafico e' SOLO LETTURA e      |
+//|  mostra in tempo reale i valori attivi, con pochi pulsanti per    |
+//|  Trading ON/OFF, BE dopo parziale ON/OFF e annullamento manuale.  |
 //|                                                                    |
 //|  Per ogni evento attivo, l'EA:                                    |
 //|   1) osserva le candele M5 nei minuti precedenti l'orario della   |
@@ -22,21 +22,20 @@
 //|      sposta lo Stop Loss a pareggio sul resto.                    |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "3.00"
+#property version   "4.00"
 #property strict
 
 #include <Trade\Trade.mqh>
 
 //================================= INPUT ==================================
-//  Questi sono solo i valori di DEFAULT al primo avvio: tutto e'      //
-//  comunque modificabile in qualsiasi momento dal pannello sul       //
-//  grafico, senza dover rimuovere/riattaccare l'EA.                  //
+//  Tutte le impostazioni si fanno QUI (proprieta' dell'EA). Il       //
+//  pannello sul grafico e' solo di lettura/controllo rapido.         //
 
-input group "=== Evento 1 (es. NFP) ==="
-input string InpEvent1DefaultTime    = "14:30"; // Orario italiano di partenza (HH:MM) - vale per OGGI
+input group "=== Evento 1 (es. NFP) - orario italiano, vale per OGGI ==="
+input string InpEvent1Time           = "14:30"; // Orario (HH:MM). Se gia' passato oggi, l'EA lo sposta a domani
 
-input group "=== Evento 2 (es. FOMC) ==="
-input string InpEvent2DefaultTime    = "20:00"; // Orario italiano di partenza (HH:MM) - vale per OGGI
+input group "=== Evento 2 (es. FOMC) - orario italiano, vale per OGGI ==="
+input string InpEvent2Time           = "20:00"; // Orario (HH:MM). Se gia' passato oggi, l'EA lo sposta a domani
 
 input group "=== Fuso orario ==="
 input int    InpServerMinusItalyMin  = 60;   // Differenza in MINUTI tra orario server del broker e orario italiano
@@ -45,22 +44,22 @@ input group "=== Finestra di osservazione ==="
 input int    InpLookbackMinutes      = 10;   // Minuti da guardare prima della notizia (10 = 2 candele M5)
 input int    InpSecondsBeforeNews    = 3;    // Secondi prima della notizia in cui si congela il range e si piazzano gli ordini
 
-input group "=== Ordini pendenti (default, modificabili dal pannello) ==="
+input group "=== Ordini pendenti ==="
 input double InpPipsDistance         = 3.0;  // Distanza in pips tra massimo/minimo e prezzo di entrata
 input double InpLotSize              = 0.10; // Lotti per ogni ordine
 input double InpStopLossPips         = 20.0; // Stop Loss in pips (0 = nessuno)
 input double InpTakeProfitPips       = 0.0;  // Take Profit finale in pips (0 = nessuno)
 input double InpPartialClosePercent  = 50.0; // % di posizione da chiudere al target parziale (0 = disabilitata)
 input double InpPartialTriggerPips   = 15.0; // Pips di profitto per far scattare la chiusura parziale
-input bool   InpMoveToBreakevenAfterPartial = true; // Sposta lo Stop Loss a pareggio dopo la chiusura parziale
+input bool   InpMoveToBreakevenAfterPartial = true; // Sposta lo Stop Loss a pareggio dopo la chiusura parziale (stato iniziale, poi commutabile dal pannello)
 input int    InpExpirationMinutes    = 15;   // Minuti dopo la notizia dopo cui annullare gli ordini non eseguiti
 input int    InpSlippagePoints       = 50;   // Deviazione massima in punti per l'invio ordini
 input ulong  InpMagicNumber          = 20260825; // Magic number
 
 input group "=== Sicurezza ==="
-input bool   InpEnableTrading        = true; // false = simulazione: calcola i livelli ma non invia ordini reali
+input bool   InpEnableTrading        = true; // Stato iniziale del pulsante Trading ON/OFF (false = simulazione)
 
-input group "=== Pannello su grafico ==="
+input group "=== Pannello su grafico (sola lettura) ==="
 input bool   InpShowPanel            = true; // Mostra il pannello di stato/controllo sul grafico
 input int    InpPanelX               = 10;   // Posizione orizzontale del pannello (pixel dal bordo)
 input int    InpPanelY               = 20;   // Posizione verticale del pannello (pixel dal bordo)
@@ -114,18 +113,12 @@ CategoryState g_fomc;
 
 bool     g_tradingEnabledRuntime = true;
 bool     g_moveToBreakeven       = true;
-double   g_pipsDistance          = 3.0;
-double   g_lotSize               = 0.10;
-double   g_slPips                = 20.0;
-double   g_tpPips                = 0.0;
-double   g_partialPercent        = 50.0;
-double   g_partialTriggerPips    = 15.0;
 
 string   g_panelPrefix = "AQ_";
 CTrade   trade;
 
 //+------------------------------------------------------------------+
-//| Azzera una categoria (NFP o FOMC)                                  |
+//| Azzera una categoria (Evento 1 o Evento 2)                         |
 //+------------------------------------------------------------------+
 void ResetCategory(CategoryState &cat, const string label)
   {
@@ -180,7 +173,7 @@ bool ArmCategory(CategoryState &cat, string timeStr)
    StringTrimRight(timeStr);
    if(timeStr == "")
      {
-      PrintFormat("Aquila [%s]: nessun orario inserito, categoria disattivata.", cat.label);
+      PrintFormat("Aquila [%s]: nessun orario impostato nelle proprieta', categoria disattivata.", cat.label);
       ResetCategory(cat, cat.label);
       return(false);
      }
@@ -188,7 +181,7 @@ bool ArmCategory(CategoryState &cat, string timeStr)
    datetime serverTime = ComputeTargetTime(timeStr);
    if(serverTime <= 0)
      {
-      PrintFormat("Aquila [%s]: orario non valido '%s' (usa il formato HH:MM).", cat.label, timeStr);
+      PrintFormat("Aquila [%s]: orario non valido '%s' nelle proprieta' (usa il formato HH:MM).", cat.label, timeStr);
       return(false);
      }
 
@@ -213,20 +206,12 @@ int OnInit()
 
    g_tradingEnabledRuntime = InpEnableTrading;
    g_moveToBreakeven       = InpMoveToBreakevenAfterPartial;
-   g_pipsDistance          = InpPipsDistance;
-   g_lotSize               = InpLotSize;
-   g_slPips                = InpStopLossPips;
-   g_tpPips                = InpTakeProfitPips;
-   g_partialPercent        = InpPartialClosePercent;
-   g_partialTriggerPips    = InpPartialTriggerPips;
 
    ResetCategory(g_nfp, "Evento 1");
    ResetCategory(g_fomc, "Evento 2");
 
-   if(StringLen(InpEvent1DefaultTime) > 0)
-      ArmCategory(g_nfp, InpEvent1DefaultTime);
-   if(StringLen(InpEvent2DefaultTime) > 0)
-      ArmCategory(g_fomc, InpEvent2DefaultTime);
+   ArmCategory(g_nfp, InpEvent1Time);
+   ArmCategory(g_fomc, InpEvent2Time);
 
    EventSetTimer(1);
    CreatePanel();
@@ -332,7 +317,7 @@ void PlaceOrders(CategoryState &cat)
    double point  = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
    int    digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
    double pip    = PipSize();
-   double dist   = g_pipsDistance * pip;
+   double dist   = InpPipsDistance * pip;
 
    double buyPrice  = NormalizeDouble(cat.rangeHigh + dist, digits);
    double sellPrice = NormalizeDouble(cat.rangeLow  - dist, digits);
@@ -351,18 +336,18 @@ void PlaceOrders(CategoryState &cat)
      }
 
    double sl_buy = 0, tp_buy = 0, sl_sell = 0, tp_sell = 0;
-   if(g_slPips > 0)
+   if(InpStopLossPips > 0)
      {
-      sl_buy  = NormalizeDouble(buyPrice  - g_slPips * pip, digits);
-      sl_sell = NormalizeDouble(sellPrice + g_slPips * pip, digits);
+      sl_buy  = NormalizeDouble(buyPrice  - InpStopLossPips * pip, digits);
+      sl_sell = NormalizeDouble(sellPrice + InpStopLossPips * pip, digits);
      }
-   if(g_tpPips > 0)
+   if(InpTakeProfitPips > 0)
      {
-      tp_buy  = NormalizeDouble(buyPrice  + g_tpPips * pip, digits);
-      tp_sell = NormalizeDouble(sellPrice - g_tpPips * pip, digits);
+      tp_buy  = NormalizeDouble(buyPrice  + InpTakeProfitPips * pip, digits);
+      tp_sell = NormalizeDouble(sellPrice - InpTakeProfitPips * pip, digits);
      }
 
-   double volume = NormalizeVolume(g_lotSize);
+   double volume = NormalizeVolume(InpLotSize);
    datetime expiration = cat.time + InpExpirationMinutes * 60;
 
    PrintFormat("Aquila [%s]: range [%s , %s], BuyStop=%s SellStop=%s",
@@ -441,7 +426,7 @@ void ManageArmedCategory(CategoryState &cat)
 
 //+------------------------------------------------------------------+
 //| true se il ticket di posizione e' gia' tracciato da un'altra      |
-//| categoria (evita che NFP e FOMC si "rubino" la stessa posizione)  |
+//| categoria (evita che Evento 1 e 2 si "rubino" la stessa posizione)|
 //+------------------------------------------------------------------+
 bool PositionAlreadyOwned(ulong ticket)
   {
@@ -491,7 +476,7 @@ void ManagePosition(CategoryState &cat)
       return;
      }
 
-   if(g_partialPercent > 0 && !cat.partialDone)
+   if(InpPartialClosePercent > 0 && !cat.partialDone)
      {
       double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
       long   posType   = PositionGetInteger(POSITION_TYPE);
@@ -499,17 +484,17 @@ void ManagePosition(CategoryState &cat)
       double curPrice  = (posType == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
       double profitPips = (posType == POSITION_TYPE_BUY) ? (curPrice - openPrice) / pip : (openPrice - curPrice) / pip;
 
-      if(profitPips >= g_partialTriggerPips)
+      if(profitPips >= InpPartialTriggerPips)
         {
          double vol      = PositionGetDouble(POSITION_VOLUME);
-         double closeVol = NormalizeVolume(vol * g_partialPercent / 100.0);
+         double closeVol = NormalizeVolume(vol * InpPartialClosePercent / 100.0);
 
          if(closeVol > 0 && closeVol < vol)
            {
             if(trade.PositionClosePartial(cat.positionTicket, closeVol))
               {
                cat.partialDone = true;
-               PrintFormat("Aquila [%s]: chiusura parziale %.1f%% eseguita a +%.1f pips.", cat.label, g_partialPercent, profitPips);
+               PrintFormat("Aquila [%s]: chiusura parziale %.1f%% eseguita a +%.1f pips.", cat.label, InpPartialClosePercent, profitPips);
 
                if(g_moveToBreakeven && PositionSelectByTicket(cat.positionTicket))
                   trade.PositionModify(cat.positionTicket, openPrice, PositionGetDouble(POSITION_TP));
@@ -584,7 +569,7 @@ void ProcessCategory(CategoryState &cat)
   }
 
 //+------------------------------------------------------------------+
-//| Crea/aggiorna un'etichetta di testo del pannello                  |
+//| Crea/aggiorna un'etichetta di testo del pannello (sola lettura)   |
 //+------------------------------------------------------------------+
 void PanelSetLabel(const string name, const int x, const int y, const string text, const color clr)
   {
@@ -602,40 +587,6 @@ void PanelSetLabel(const string name, const int x, const int y, const string tex
      }
    ObjectSetString(0, name, OBJPROP_TEXT, text);
    ObjectSetInteger(0, name, OBJPROP_COLOR, clr);
-  }
-
-//+------------------------------------------------------------------+
-//| Crea un campo di testo modificabile del pannello (una tantum:     |
-//| non va MAI ri-creato/sovrascritto da UpdatePanel, altrimenti      |
-//| cancelleremmo quello che l'utente sta scrivendo)                  |
-//+------------------------------------------------------------------+
-void PanelSetEdit(const string name, const int x, const int y, const int w, const int h, const string defaultText)
-  {
-   if(ObjectFind(0, name) < 0)
-     {
-      ObjectCreate(0, name, OBJ_EDIT, 0, 0, 0);
-      ObjectSetInteger(0, name, OBJPROP_CORNER, CORNER_LEFT_UPPER);
-      ObjectSetInteger(0, name, OBJPROP_XDISTANCE, x);
-      ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
-      ObjectSetInteger(0, name, OBJPROP_XSIZE, w);
-      ObjectSetInteger(0, name, OBJPROP_YSIZE, h);
-      ObjectSetInteger(0, name, OBJPROP_FONTSIZE, g_panelFont);
-      ObjectSetInteger(0, name, OBJPROP_COLOR, clrBlack);
-      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrWhite);
-      ObjectSetInteger(0, name, OBJPROP_ALIGN, ALIGN_CENTER);
-      ObjectSetInteger(0, name, OBJPROP_READONLY, false);
-      ObjectSetInteger(0, name, OBJPROP_SELECTABLE, true);
-      ObjectSetInteger(0, name, OBJPROP_SELECTED, false);
-      ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
-      ObjectSetInteger(0, name, OBJPROP_ZORDER, 50);
-      ObjectSetInteger(0, name, OBJPROP_BACK, false);
-      ObjectSetString(0, name, OBJPROP_TEXT, defaultText);
-     }
-   else
-     {
-      // ripristina sempre lo stato "scrivibile" nel caso qualcosa lo abbia alterato
-      ObjectSetInteger(0, name, OBJPROP_READONLY, false);
-     }
   }
 
 //+------------------------------------------------------------------+
@@ -681,7 +632,7 @@ string FormatCountdown(long secs)
 string CategoryStatusText(const CategoryState &cat)
   {
    if(!cat.active)
-      return("non impostato");
+      return("non impostato (vedi proprieta' EA)");
 
    if(cat.state == STATE_WAITING)
      {
@@ -746,7 +697,7 @@ void UpdateBEButton()
   }
 
 //+------------------------------------------------------------------+
-//| Ricrea le scritte dinamiche del pannello (mai gli edit box!)      |
+//| Ricrea le scritte dinamiche del pannello (sola lettura)            |
 //+------------------------------------------------------------------+
 void UpdatePanel()
   {
@@ -756,7 +707,7 @@ void UpdatePanel()
    int x = InpPanelX;
    int y = InpPanelY;
 
-   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * g_lineH, "AQUILA - Dashboard", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * g_lineH, "AQUILA - Dashboard (sola lettura)", clrWhite);
    PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * g_lineH,
                  g_tradingEnabledRuntime ? "Modalita': LIVE (invia ordini reali)" : "Modalita': SIMULAZIONE",
                  g_tradingEnabledRuntime ? clrOrange : clrLightGray);
@@ -765,6 +716,16 @@ void UpdatePanel()
    PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * g_lineH, CategoryRangeText(g_nfp), clrWhite);
    PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * g_lineH, "Evento 2: " + CategoryStatusText(g_fomc), clrYellow);
    PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * g_lineH, CategoryRangeText(g_fomc), clrWhite);
+
+   PanelSetLabel(g_panelPrefix + "L6", x,
+                 y + 6 * g_lineH,
+                 StringFormat("Distanza: %.1fp  Lotto: %.2f  SL: %.1fp  TP: %.1fp",
+                              InpPipsDistance, InpLotSize, InpStopLossPips, InpTakeProfitPips),
+                 clrSilver);
+   PanelSetLabel(g_panelPrefix + "L7", x,
+                 y + 7 * g_lineH,
+                 StringFormat("Parziale: %.1f%% a %.1fp", InpPartialClosePercent, InpPartialTriggerPips),
+                 clrSilver);
 
    UpdateTradingButton();
    UpdateBEButton();
@@ -789,7 +750,6 @@ void CreatePanel()
    ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, x - SC(6));
    ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, y - SC(6));
    ObjectSetInteger(0, bg, OBJPROP_XSIZE, SC(300));
-   ObjectSetInteger(0, bg, OBJPROP_YSIZE, SC(460));
    ObjectSetInteger(0, bg, OBJPROP_ZORDER, 0);
    ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, C'20,20,20');
    ObjectSetInteger(0, bg, OBJPROP_BORDER_TYPE, BORDER_FLAT);
@@ -799,67 +759,26 @@ void CreatePanel()
    ObjectSetInteger(0, bg, OBJPROP_HIDDEN, true);
 
    // -- Blocco stato (dinamico, gestito da UpdatePanel) --
-   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * g_lineH, "AQUILA - Dashboard", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * g_lineH, "AQUILA - Dashboard (sola lettura)", clrWhite);
    PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * g_lineH, "", clrWhite);
    PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * g_lineH, "", clrYellow);
    PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * g_lineH, "", clrWhite);
    PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * g_lineH, "", clrYellow);
    PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * g_lineH, "", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L6", x, y + 6 * g_lineH, "", clrSilver);
+   PanelSetLabel(g_panelPrefix + "L7", x, y + 7 * g_lineH, "", clrSilver);
 
-   int by = y + 6 * g_lineH + SC(10);
+   int by = y + 8 * g_lineH + SC(14);
 
-   // -- Blocco impostazioni (editabile) --
-   PanelSetLabel(g_panelPrefix + "LblNFPDate", x, by, "Orario Evento 1 (HH:MM, oggi):", clrSilver);
-   PanelSetEdit(g_panelPrefix + "EditNFPDate", x, by + SC(14), SC(140), SC(20), InpEvent1DefaultTime);
-   PanelSetButton(g_panelPrefix + "BtnSetNFP", x + SC(150), by + SC(14), SC(130), SC(20), "Imposta Evento 1", clrDarkSlateGray);
-   by += SC(38);
-
-   PanelSetLabel(g_panelPrefix + "LblFOMCDate", x, by, "Orario Evento 2 (HH:MM, oggi):", clrSilver);
-   PanelSetEdit(g_panelPrefix + "EditFOMCDate", x, by + SC(14), SC(140), SC(20), InpEvent2DefaultTime);
-   PanelSetButton(g_panelPrefix + "BtnSetFOMC", x + SC(150), by + SC(14), SC(130), SC(20), "Imposta Evento 2", clrDarkSlateGray);
-   by += SC(38);
-
-   PanelSetLabel(g_panelPrefix + "LblDist", x, by, "Distanza pips:", clrSilver);
-   PanelSetEdit(g_panelPrefix + "EditDist", x + SC(160), by - SC(2), SC(90), SC(20), DoubleToString(InpPipsDistance, 1));
-   by += SC(24);
-
-   PanelSetLabel(g_panelPrefix + "LblLot", x, by, "Lotto:", clrSilver);
-   PanelSetEdit(g_panelPrefix + "EditLot", x + SC(160), by - SC(2), SC(90), SC(20), DoubleToString(InpLotSize, 2));
-   by += SC(24);
-
-   PanelSetLabel(g_panelPrefix + "LblSL", x, by, "Stop Loss pips:", clrSilver);
-   PanelSetEdit(g_panelPrefix + "EditSL", x + SC(160), by - SC(2), SC(90), SC(20), DoubleToString(InpStopLossPips, 1));
-   by += SC(24);
-
-   PanelSetLabel(g_panelPrefix + "LblTP", x, by, "Take Profit pips:", clrSilver);
-   PanelSetEdit(g_panelPrefix + "EditTP", x + SC(160), by - SC(2), SC(90), SC(20), DoubleToString(InpTakeProfitPips, 1));
-   by += SC(24);
-
-   PanelSetLabel(g_panelPrefix + "LblPartPct", x, by, "Chiusura parziale %:", clrSilver);
-   PanelSetEdit(g_panelPrefix + "EditPartPct", x + SC(160), by - SC(2), SC(90), SC(20), DoubleToString(InpPartialClosePercent, 1));
-   by += SC(24);
-
-   PanelSetLabel(g_panelPrefix + "LblPartTrig", x, by, "Trigger parziale (pips):", clrSilver);
-   PanelSetEdit(g_panelPrefix + "EditPartTrig", x + SC(160), by - SC(2), SC(90), SC(20), DoubleToString(InpPartialTriggerPips, 1));
+   PanelSetButton(g_panelPrefix + "BtnTrading", x, by, SC(140), SC(24), "", clrGray);
+   PanelSetButton(g_panelPrefix + "BtnBE", x + SC(150), by, SC(140), SC(24), "", clrGray);
    by += SC(30);
 
-   PanelSetLabel(g_panelPrefix + "LblScale", x, by, "Scala pannello (0.5-3.0):", clrSilver);
-   PanelSetEdit(g_panelPrefix + "EditScale", x + SC(160), by - SC(2), SC(90), SC(20), DoubleToString(g_panelScale, 2));
+   PanelSetButton(g_panelPrefix + "BtnCancelNFP", x, by, SC(140), SC(24), "Annulla Evento 1", clrMaroon);
+   PanelSetButton(g_panelPrefix + "BtnCancelFOMC", x + SC(150), by, SC(140), SC(24), "Annulla Evento 2", clrMaroon);
    by += SC(30);
 
-   PanelSetButton(g_panelPrefix + "BtnApply", x, by, SC(140), SC(22), "Applica impostazioni", clrDarkSlateGray);
-   PanelSetButton(g_panelPrefix + "BtnApplyScale", x + SC(150), by, SC(130), SC(22), "Applica scala", clrDarkSlateGray);
-   by += SC(30);
-
-   PanelSetButton(g_panelPrefix + "BtnTrading", x, by, SC(135), SC(22), "", clrGray);
-   PanelSetButton(g_panelPrefix + "BtnBE", x + SC(145), by, SC(135), SC(22), "", clrGray);
-   by += SC(28);
-
-   PanelSetButton(g_panelPrefix + "BtnCancelNFP", x, by, SC(135), SC(22), "Annulla Evento 1", clrMaroon);
-   PanelSetButton(g_panelPrefix + "BtnCancelFOMC", x + SC(145), by, SC(135), SC(22), "Annulla Evento 2", clrMaroon);
-   by += SC(28);
-
-   ObjectSetInteger(0, bg, OBJPROP_YSIZE, (by - y) + SC(20));
+   ObjectSetInteger(0, bg, OBJPROP_YSIZE, (by - y) + SC(14));
 
    UpdatePanel();
   }
@@ -871,62 +790,6 @@ void DestroyPanel()
   {
    ObjectsDeleteAll(0, g_panelPrefix);
    ChartRedraw(0);
-  }
-
-//+------------------------------------------------------------------+
-//| Ricostruisce il pannello con una nuova scala, preservando i         |
-//| valori che l'utente aveva gia' scritto nei campi editabili         |
-//+------------------------------------------------------------------+
-void RebuildPanelKeepingValues()
-  {
-   string p = g_panelPrefix;
-
-   string savedNFP  = ObjectGetString(0, p + "EditNFPDate", OBJPROP_TEXT);
-   string savedFOMC = ObjectGetString(0, p + "EditFOMCDate", OBJPROP_TEXT);
-   string savedDist = ObjectGetString(0, p + "EditDist", OBJPROP_TEXT);
-   string savedLot  = ObjectGetString(0, p + "EditLot", OBJPROP_TEXT);
-   string savedSL   = ObjectGetString(0, p + "EditSL", OBJPROP_TEXT);
-   string savedTP   = ObjectGetString(0, p + "EditTP", OBJPROP_TEXT);
-   string savedPct  = ObjectGetString(0, p + "EditPartPct", OBJPROP_TEXT);
-   string savedTrig = ObjectGetString(0, p + "EditPartTrig", OBJPROP_TEXT);
-
-   DestroyPanel();
-   CreatePanel();
-
-   ObjectSetString(0, p + "EditNFPDate", OBJPROP_TEXT, savedNFP);
-   ObjectSetString(0, p + "EditFOMCDate", OBJPROP_TEXT, savedFOMC);
-   ObjectSetString(0, p + "EditDist", OBJPROP_TEXT, savedDist);
-   ObjectSetString(0, p + "EditLot", OBJPROP_TEXT, savedLot);
-   ObjectSetString(0, p + "EditSL", OBJPROP_TEXT, savedSL);
-   ObjectSetString(0, p + "EditTP", OBJPROP_TEXT, savedTP);
-   ObjectSetString(0, p + "EditPartPct", OBJPROP_TEXT, savedPct);
-   ObjectSetString(0, p + "EditPartTrig", OBJPROP_TEXT, savedTrig);
-   ObjectSetString(0, p + "EditScale", OBJPROP_TEXT, DoubleToString(g_panelScale, 2));
-  }
-
-//+------------------------------------------------------------------+
-//| Legge i campi editabili e aggiorna i parametri usati dall'EA      |
-//+------------------------------------------------------------------+
-void ApplyPanelSettings()
-  {
-   string p = g_panelPrefix;
-
-   double dist     = StringToDouble(ObjectGetString(0, p + "EditDist", OBJPROP_TEXT));
-   double lot      = StringToDouble(ObjectGetString(0, p + "EditLot", OBJPROP_TEXT));
-   double sl       = StringToDouble(ObjectGetString(0, p + "EditSL", OBJPROP_TEXT));
-   double tp       = StringToDouble(ObjectGetString(0, p + "EditTP", OBJPROP_TEXT));
-   double partPct  = StringToDouble(ObjectGetString(0, p + "EditPartPct", OBJPROP_TEXT));
-   double partTrig = StringToDouble(ObjectGetString(0, p + "EditPartTrig", OBJPROP_TEXT));
-
-   g_pipsDistance       = (dist > 0) ? dist : InpPipsDistance;
-   g_lotSize            = (lot  > 0) ? lot  : InpLotSize;
-   g_slPips             = (sl   >= 0) ? sl  : 0;
-   g_tpPips             = (tp   >= 0) ? tp  : 0;
-   g_partialPercent     = (partPct  >= 0 && partPct  <= 100) ? partPct  : 0;
-   g_partialTriggerPips = (partTrig >= 0) ? partTrig : 0;
-
-   PrintFormat("Aquila: impostazioni applicate -> distanza=%.1f lotto=%.2f SL=%.1f TP=%.1f parziale=%.1f%% trigger=%.1f pips",
-               g_pipsDistance, g_lotSize, g_slPips, g_tpPips, g_partialPercent, g_partialTriggerPips);
   }
 
 //+------------------------------------------------------------------+
@@ -948,35 +811,6 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
      {
       g_moveToBreakeven = !g_moveToBreakeven;
       ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-     }
-   else if(sparam == p + "BtnSetNFP")
-     {
-      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-      string t = ObjectGetString(0, p + "EditNFPDate", OBJPROP_TEXT);
-      ArmCategory(g_nfp, t);
-     }
-   else if(sparam == p + "BtnSetFOMC")
-     {
-      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-      string t = ObjectGetString(0, p + "EditFOMCDate", OBJPROP_TEXT);
-      ArmCategory(g_fomc, t);
-     }
-   else if(sparam == p + "BtnApply")
-     {
-      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-      ApplyPanelSettings();
-     }
-   else if(sparam == p + "BtnApplyScale")
-     {
-      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-      double newScale = StringToDouble(ObjectGetString(0, p + "EditScale", OBJPROP_TEXT));
-      if(newScale < 0.5) newScale = 0.5;
-      if(newScale > 3.0) newScale = 3.0;
-      g_panelScale = newScale;
-      g_panelFont  = SC(PANEL_FONT_BASE);
-      g_lineH      = SC(PANEL_LINE_H_BASE);
-      RebuildPanelKeepingValues();
-      PrintFormat("Aquila: scala pannello impostata a %.2f", g_panelScale);
      }
    else if(sparam == p + "BtnCancelNFP")
      {
