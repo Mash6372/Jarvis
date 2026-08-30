@@ -26,24 +26,24 @@
       <input type="number" name="min_rooms" placeholder="Locali min">
       <button type="submit">Aggiungi ricerca</button>
     </form>
-    <div id="searches-table-wrap">
-      <table id="searches-table">
-        <thead>
-          <tr>
-            <th></th>
-            <th>Nome</th>
-            <th>Citt&agrave;/Zona</th>
-            <th>Prezzo</th>
-            <th>Mq</th>
-            <th>Locali min</th>
-            <th>Portali</th>
-            <th>Annunci</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="searches-body"></tbody>
-      </table>
-    </div>
+    <details class="list-toggle" open>
+      <summary>Elenco ricerche salvate</summary>
+      <div id="searches-table-wrap">
+        <table id="searches-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Nome</th>
+              <th>Citt&agrave;/Zona</th>
+              <th>Portali</th>
+              <th>Annunci</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="searches-body"></tbody>
+        </table>
+      </div>
+    </details>
   </section>
 
   <section class="panel">
@@ -135,32 +135,35 @@
       </form>
     </details>
 
-    <div id="listings-table-wrap">
-      <table id="listings-table">
-        <thead>
-          <tr>
-            <th></th>
-            <th>Titolo</th>
-            <th>Portale</th>
-            <th>Ricerca</th>
-            <th>Citt&agrave;/Zona</th>
-            <th>Prezzo</th>
-            <th>Mq</th>
-            <th>&euro;/mq</th>
-            <th>Locali</th>
-            <th>Piano</th>
-            <th>Condizione</th>
-            <th>Valore post-reno (stima)</th>
-            <th>Costo ristrutturazione (stima)</th>
-            <th>Margine stimato</th>
-            <th>ROI %</th>
-            <th>Deal Score</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="listings-body"></tbody>
-      </table>
-    </div>
+    <details class="list-toggle" open>
+      <summary>Elenco annunci</summary>
+      <div id="listings-table-wrap">
+        <table id="listings-table">
+          <thead>
+            <tr>
+              <th>Link</th>
+              <th></th>
+              <th>Titolo</th>
+              <th>Portale</th>
+              <th>Ricerca</th>
+              <th>Citt&agrave;/Zona</th>
+              <th>Prezzo</th>
+              <th>Mq</th>
+              <th>&euro;/mq</th>
+              <th>Locali</th>
+              <th>Piano</th>
+              <th>Condizione</th>
+              <th>Valore post-reno (stima)</th>
+              <th>Costo ristrutturazione (stima)</th>
+              <th>Margine stimato</th>
+              <th>ROI %</th>
+              <th>Deal Score</th>
+            </tr>
+          </thead>
+          <tbody id="listings-body"></tbody>
+        </table>
+      </div>
+    </details>
 
     <dialog id="edit-dialog">
       <h3>Modifica annuncio</h3>

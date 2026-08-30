@@ -26,15 +26,10 @@ function renderSearchesTable() {
 
   for (const s of allSearches) {
     const tr = document.createElement("tr");
-    const priceRange = `${s.min_price != null ? eur(s.min_price) : "-"} – ${s.max_price != null ? eur(s.max_price) : "-"}`;
-    const sizeRange = `${s.min_size_sqm ?? "-"} – ${s.max_size_sqm ?? "-"}`;
     tr.innerHTML = `
       <td></td>
       <td>${s.name}</td>
       <td>${s.city}${s.zone ? " / " + s.zone : ""}</td>
-      <td>${priceRange}</td>
-      <td>${sizeRange}</td>
-      <td>${s.min_rooms ?? "-"}</td>
       <td>${(s.portals || []).join(", ") || "-"}</td>
       <td>${s.listings_count}</td>
       <td></td>
@@ -151,6 +146,7 @@ async function loadListings() {
     const searchName = allSearches.find((s) => s.id === l.search_id)?.name || "-";
     const tr = document.createElement("tr");
     tr.innerHTML = `
+      <td><a class="listing-link" href="${l.url}" target="_blank" rel="noopener">Apri</a></td>
       <td></td>
       <td>${l.title || "-"}</td>
       <td><span class="badge">${l.source}</span></td>
@@ -167,10 +163,9 @@ async function loadListings() {
       <td>${eur(deal.estimated_margin)}</td>
       <td>${deal.estimated_roi_pct != null ? deal.estimated_roi_pct.toFixed(1) + "%" : "-"}</td>
       <td class="${scoreClass(deal.deal_score)}">${deal.deal_score ?? "-"} <small>(${deal.confidence || "-"})</small></td>
-      <td><a class="listing-link" href="${l.url}" target="_blank" rel="noopener">Apri</a></td>
     `;
 
-    const actionsTd = tr.children[0];
+    const actionsTd = tr.children[1];
 
     const editBtn = document.createElement("button");
     editBtn.className = "edit-btn";
