@@ -8,7 +8,7 @@ from app.schemas import DealAnalysis, ListingFilter, ListingOut
 from app.scrapers.base import ScrapedListing
 from app.scrapers.idealista import IdealistaScraper
 from app.scrapers.immobiliare import ImmobiliareScraper
-from app.services.analysis import analyze_deal
+from app.services.analysis import analyze_deal, recompute_price_per_sqm
 from app.services.scheduler import upsert_listing
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
@@ -166,6 +166,40 @@ def add_manual_listing(payload: ManualListingIn, db: Session = Depends(get_db)):
         search_id=payload.search_id,
     )
     listing = upsert_listing(db, scraped)
+    deal_result = analyze_deal(db, listing)
+    return ListingWithDeal(
+        **ListingOut.model_validate(listing).model_dump(),
+        deal=DealAnalysis(listing_id=listing.id, **deal_result.__dict__),
+    )
+
+
+@router.put("/{listing_id}", response_model=ListingWithDeal)
+def update_listing(listing_id: int, payload: ManualListingIn, db: Session = Depends(get_db)):
+    """Edit the characteristics of an already-stored listing (manual or
+    auto-scraped) — reuses the same field set as manual entry."""
+    listing = db.get(Listing, listing_id)
+    if not listing:
+        raise HTTPException(404, "Listing not found")
+
+    listing.source = payload.source
+    listing.source_id = payload.url
+    listing.url = payload.url
+    listing.title = payload.title
+    listing.price = payload.price
+    listing.size_sqm = payload.size_sqm
+    listing.rooms = payload.rooms
+    listing.bathrooms = payload.bathrooms
+    listing.floor = payload.floor
+    listing.city = payload.city
+    listing.zone = payload.zone
+    listing.address = payload.address
+    listing.condition = payload.condition
+    listing.search_id = payload.search_id
+
+    recompute_price_per_sqm(listing)
+    db.commit()
+    db.refresh(listing)
+
     deal_result = analyze_deal(db, listing)
     return ListingWithDeal(
         **ListingOut.model_validate(listing).model_dump(),

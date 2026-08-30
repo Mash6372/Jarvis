@@ -170,17 +170,85 @@ async function loadListings() {
       <td><a class="listing-link" href="${l.url}" target="_blank" rel="noopener">Apri</a></td>
     `;
 
-    const delTd = tr.children[0];
+    const actionsTd = tr.children[0];
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit-btn";
+    editBtn.textContent = "✏️";
+    editBtn.title = "Modifica annuncio";
+    editBtn.onclick = () => openEditDialog(l);
+    actionsTd.appendChild(editBtn);
+
     const delBtn = document.createElement("button");
     delBtn.className = "delete-btn";
     delBtn.textContent = "✕";
     delBtn.title = "Elimina annuncio";
     delBtn.onclick = () => deleteListing(l.id, l.title);
-    delTd.appendChild(delBtn);
+    actionsTd.appendChild(delBtn);
 
     tbody.appendChild(tr);
   }
 }
+
+function openEditDialog(listing) {
+  const form = document.getElementById("edit-form");
+  form.elements["id"].value = listing.id;
+  form.elements["url"].value = listing.url || "";
+  form.elements["source"].value = listing.source;
+  form.elements["title"].value = listing.title || "";
+  form.elements["price"].value = listing.price ?? "";
+  form.elements["size_sqm"].value = listing.size_sqm ?? "";
+  form.elements["rooms"].value = listing.rooms ?? "";
+  form.elements["bathrooms"].value = listing.bathrooms ?? "";
+  form.elements["floor"].value = listing.floor || "";
+  form.elements["city"].value = listing.city || "";
+  form.elements["zone"].value = listing.zone || "";
+  form.elements["condition"].value = listing.condition;
+
+  const editSelect = document.getElementById("edit-search-select");
+  editSelect.innerHTML =
+    `<option value="">Nessuna ricerca associata</option>` +
+    allSearches.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+  editSelect.value = listing.search_id ?? "";
+
+  document.getElementById("edit-dialog").showModal();
+}
+
+document.getElementById("edit-cancel").addEventListener("click", () => {
+  document.getElementById("edit-dialog").close();
+});
+
+document.getElementById("edit-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = new FormData(e.target);
+  const id = form.get("id");
+  const payload = {
+    url: form.get("url"),
+    source: form.get("source"),
+    title: form.get("title") || null,
+    price: Number(form.get("price")),
+    size_sqm: Number(form.get("size_sqm")),
+    rooms: form.get("rooms") ? Number(form.get("rooms")) : null,
+    bathrooms: form.get("bathrooms") ? Number(form.get("bathrooms")) : null,
+    floor: form.get("floor") || null,
+    city: form.get("city"),
+    zone: form.get("zone") || null,
+    condition: form.get("condition"),
+    search_id: form.get("search_id") ? Number(form.get("search_id")) : null,
+  };
+  try {
+    await fetchJSON(`${API_BASE}/api/listings/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    document.getElementById("edit-dialog").close();
+    await loadSearches();
+    loadListings();
+  } catch (err) {
+    alert("Errore modifica annuncio: " + err.message);
+  }
+});
 
 async function deleteListing(id, title) {
   if (!confirm(`Eliminare l'annuncio "${title || id}"?`)) return;
