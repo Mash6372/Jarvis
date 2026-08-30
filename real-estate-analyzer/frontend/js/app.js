@@ -111,6 +111,7 @@ async function loadListings() {
       <td>${num(l.size_sqm)}</td>
       <td>${eur(l.price_per_sqm)}</td>
       <td>${l.rooms ?? "-"}</td>
+      <td>${l.floor || "-"}</td>
       <td>${l.condition}</td>
       <td>${eur(deal.estimated_after_reno_value)}</td>
       <td>${eur(deal.estimated_renovation_cost)}</td>
@@ -136,6 +137,7 @@ document.getElementById("manual-form").addEventListener("submit", async (e) => {
     size_sqm: Number(form.get("size_sqm")),
     rooms: form.get("rooms") ? Number(form.get("rooms")) : null,
     bathrooms: form.get("bathrooms") ? Number(form.get("bathrooms")) : null,
+    floor: form.get("floor") || null,
     city: form.get("city"),
     zone: form.get("zone") || null,
     condition: form.get("condition"),
