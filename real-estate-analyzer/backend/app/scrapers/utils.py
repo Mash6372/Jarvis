@@ -28,11 +28,23 @@ def is_allowed_by_robots(url: str) -> bool:
     domain = _domain(url)
     if domain not in _robots_cache:
         rp = robotparser.RobotFileParser()
-        rp.set_url(f"https://{domain}/robots.txt")
         try:
-            rp.read()
+            # RobotFileParser.read() fetches via urllib with a generic
+            # "Python-urllib/x.y" User-Agent, which some WAFs (e.g.
+            # immobiliare.it) reject outright — making a real robots.txt
+            # look unreadable and triggering the fail-closed branch below
+            # even though the site allows the page. Fetch it ourselves with
+            # the same realistic User-Agent used for real requests instead.
+            response = httpx.get(
+                f"https://{domain}/robots.txt",
+                headers={"User-Agent": settings.user_agent},
+                timeout=settings.request_timeout_seconds,
+                follow_redirects=True,
+            )
+            response.raise_for_status()
+            rp.parse(response.text.splitlines())
         except Exception:
-            # If robots.txt can't be fetched, fail closed for safety.
+            # If robots.txt genuinely can't be fetched, fail closed for safety.
             return False
         _robots_cache[domain] = rp
     return _robots_cache[domain].can_fetch(settings.user_agent, url)
