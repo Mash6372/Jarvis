@@ -41,6 +41,7 @@ class ScrapedListing:
     photos: list[str] = field(default_factory=list)
     agency: str | None = None
     raw_data: dict = field(default_factory=dict)
+    search_id: int | None = None
 
 
 class BaseScraper(ABC):

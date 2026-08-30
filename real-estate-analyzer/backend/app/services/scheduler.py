@@ -59,6 +59,7 @@ def _run_portal(db: Session, search: SavedSearch, portal: str, scraper, filters:
     found = 0
     try:
         for scraped in scraper.search(filters):
+            scraped.search_id = search.id
             upsert_listing(db, scraped)
             found += 1
         run.status = RunStatus.SUCCESS
@@ -85,6 +86,8 @@ def upsert_listing(db: Session, scraped) -> Listing:
             "description", "photos", "agency", "raw_data",
         ):
             setattr(existing, field, getattr(scraped, field))
+        if scraped.search_id is not None:
+            existing.search_id = scraped.search_id
         existing.last_seen_at = datetime.utcnow()
         existing.is_active = True
         listing = existing
@@ -112,6 +115,7 @@ def upsert_listing(db: Session, scraped) -> Listing:
             photos=scraped.photos,
             agency=scraped.agency,
             raw_data=scraped.raw_data,
+            search_id=scraped.search_id,
         )
         db.add(listing)
 

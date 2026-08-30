@@ -23,6 +23,8 @@ def list_listings(filters: ListingFilter = Depends(), db: Session = Depends(get_
     query = db.query(Listing)
     if filters.only_active:
         query = query.filter(Listing.is_active.is_(True))
+    if filters.q:
+        query = query.filter(Listing.title.ilike(f"%{filters.q}%"))
     if filters.city:
         query = query.filter(Listing.city.ilike(f"%{filters.city}%"))
     if filters.zone:
@@ -39,10 +41,18 @@ def list_listings(filters: ListingFilter = Depends(), db: Session = Depends(get_
         query = query.filter(Listing.rooms >= filters.min_rooms)
     if filters.max_rooms is not None:
         query = query.filter(Listing.rooms <= filters.max_rooms)
+    if filters.min_bathrooms is not None:
+        query = query.filter(Listing.bathrooms >= filters.min_bathrooms)
+    if filters.max_bathrooms is not None:
+        query = query.filter(Listing.bathrooms <= filters.max_bathrooms)
+    if filters.floor:
+        query = query.filter(Listing.floor == filters.floor)
     if filters.condition:
         query = query.filter(Listing.condition == filters.condition)
     if filters.source:
         query = query.filter(Listing.source == filters.source)
+    if filters.search_id is not None:
+        query = query.filter(Listing.search_id == filters.search_id)
 
     if filters.sort_by == "price":
         query = query.order_by(Listing.price.asc())
@@ -134,6 +144,7 @@ class ManualListingIn(BaseModel):
     zone: str | None = None
     address: str | None = None
     condition: str = "unknown"
+    search_id: int | None = None
 
 
 @router.post("/manual", response_model=ListingWithDeal, status_code=201)
@@ -152,6 +163,7 @@ def add_manual_listing(payload: ManualListingIn, db: Session = Depends(get_db)):
         zone=payload.zone,
         address=payload.address,
         condition=payload.condition,
+        search_id=payload.search_id,
     )
     listing = upsert_listing(db, scraped)
     deal_result = analyze_deal(db, listing)
@@ -159,3 +171,12 @@ def add_manual_listing(payload: ManualListingIn, db: Session = Depends(get_db)):
         **ListingOut.model_validate(listing).model_dump(),
         deal=DealAnalysis(listing_id=listing.id, **deal_result.__dict__),
     )
+
+
+@router.delete("/{listing_id}", status_code=204)
+def delete_listing(listing_id: int, db: Session = Depends(get_db)):
+    listing = db.get(Listing, listing_id)
+    if not listing:
+        raise HTTPException(404, "Listing not found")
+    db.delete(listing)
+    db.commit()

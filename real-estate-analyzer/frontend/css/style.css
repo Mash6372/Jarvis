@@ -119,7 +119,32 @@ button:hover { filter: brightness(1.05); }
   font-weight: bold;
 }
 
-#listings-table-wrap { overflow-x: auto; }
+#listings-table-wrap, #searches-table-wrap { overflow-x: auto; }
+
+.delete-btn {
+  background: transparent;
+  border: 1px solid var(--accent-bad);
+  color: var(--accent-bad);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background: var(--accent-bad);
+  color: #1a0505;
+}
+
+.run-btn {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
 
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 

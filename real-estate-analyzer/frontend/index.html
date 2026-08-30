@@ -26,12 +26,30 @@
       <input type="number" name="min_rooms" placeholder="Locali min">
       <button type="submit">Aggiungi ricerca</button>
     </form>
-    <div id="searches-list" class="chips"></div>
+    <div id="searches-table-wrap">
+      <table id="searches-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Nome</th>
+            <th>Citt&agrave;/Zona</th>
+            <th>Prezzo</th>
+            <th>Mq</th>
+            <th>Locali min</th>
+            <th>Portali</th>
+            <th>Annunci</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="searches-body"></tbody>
+      </table>
+    </div>
   </section>
 
   <section class="panel">
     <h2>Annunci</h2>
     <div class="filters">
+      <input type="text" id="f-q" placeholder="Cerca nel titolo...">
       <input type="text" id="f-city" placeholder="Citt&agrave;">
       <input type="text" id="f-zone" placeholder="Zona">
       <input type="number" id="f-min-price" placeholder="Prezzo min">
@@ -39,6 +57,20 @@
       <input type="number" id="f-min-size" placeholder="Mq min">
       <input type="number" id="f-max-size" placeholder="Mq max">
       <input type="number" id="f-min-rooms" placeholder="Locali min">
+      <input type="number" id="f-max-rooms" placeholder="Locali max">
+      <input type="number" id="f-min-bathrooms" placeholder="Bagni min">
+      <input type="number" id="f-max-bathrooms" placeholder="Bagni max">
+      <select id="f-floor">
+        <option value="">Tutti i piani</option>
+        <option value="T">Piano terra</option>
+        <option value="R">Rialzato</option>
+        <option value="1">1&deg; piano</option>
+        <option value="2">2&deg; piano</option>
+        <option value="3">3&deg; piano</option>
+        <option value="4">4&deg; piano</option>
+        <option value="5+">5&deg; piano o oltre</option>
+        <option value="U">Ultimo piano</option>
+      </select>
       <select id="f-condition">
         <option value="">Tutte le condizioni</option>
         <option value="ottimo">Ottimo/Nuovo</option>
@@ -51,6 +83,7 @@
         <option value="immobiliare.it">immobiliare.it</option>
         <option value="idealista.it">idealista.it</option>
       </select>
+      <select id="f-search"></select>
       <select id="f-sort">
         <option value="deal_score">Ordina per: Deal Score</option>
         <option value="price">Ordina per: Prezzo</option>
@@ -95,6 +128,9 @@
           <option value="da_ristrutturare">Da ristrutturare</option>
           <option value="grezzo">Grezzo</option>
         </select>
+        <select name="search_id" id="manual-search-select">
+          <option value="">Nessuna ricerca associata</option>
+        </select>
         <button type="submit">Aggiungi annuncio</button>
       </form>
     </details>
@@ -103,8 +139,10 @@
       <table id="listings-table">
         <thead>
           <tr>
+            <th></th>
             <th>Titolo</th>
             <th>Portale</th>
+            <th>Ricerca</th>
             <th>Citt&agrave;/Zona</th>
             <th>Prezzo</th>
             <th>Mq</th>

@@ -21,6 +21,7 @@ class SavedSearchOut(SavedSearchIn):
     id: int
     active: bool
     created_at: datetime
+    listings_count: int = 0
 
 
 class ListingOut(BaseModel):
@@ -46,12 +47,14 @@ class ListingOut(BaseModel):
     photos: list
     agency: str | None
     cluster_id: int | None
+    search_id: int | None
     first_seen_at: datetime
     last_seen_at: datetime
     is_active: bool
 
 
 class ListingFilter(BaseModel):
+    q: str | None = None  # free-text search on title
     city: str | None = None
     zone: str | None = None
     min_price: float | None = None
@@ -60,8 +63,12 @@ class ListingFilter(BaseModel):
     max_size_sqm: float | None = None
     min_rooms: int | None = None
     max_rooms: int | None = None
+    min_bathrooms: int | None = None
+    max_bathrooms: int | None = None
+    floor: str | None = None
     condition: str | None = None
     source: str | None = None
+    search_id: int | None = None
     only_active: bool = True
     sort_by: str = "deal_score"  # deal_score | price | price_per_sqm | size_sqm
     limit: int = 50

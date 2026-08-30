@@ -48,6 +48,11 @@ class SavedSearch(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     runs: Mapped[list["ScrapeRun"]] = relationship(back_populates="search", cascade="all, delete-orphan")
+    listings: Mapped[list["Listing"]] = relationship(back_populates="search")
+
+    @property
+    def listings_count(self) -> int:
+        return len(self.listings)
 
 
 class PropertyCluster(Base):
@@ -102,6 +107,9 @@ class Listing(Base):
 
     cluster_id: Mapped[int | None] = mapped_column(ForeignKey("property_clusters.id"), nullable=True)
     cluster: Mapped[PropertyCluster | None] = relationship(back_populates="listings")
+
+    search_id: Mapped[int | None] = mapped_column(ForeignKey("saved_searches.id"), nullable=True)
+    search: Mapped[SavedSearch | None] = relationship(back_populates="listings")
 
     first_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

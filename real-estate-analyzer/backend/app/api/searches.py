@@ -2,7 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import SavedSearch, ScrapeRun
+from app.models import Listing, SavedSearch, ScrapeRun
 from app.schemas import SavedSearchIn, SavedSearchOut
 from app.services.scheduler import run_search, scheduler
 from datetime import datetime
@@ -41,6 +41,9 @@ def delete_search(search_id: int, db: Session = Depends(get_db)):
         raise HTTPException(404, "Search not found")
     if scheduler.get_job(f"search-{search_id}"):
         scheduler.remove_job(f"search-{search_id}")
+    # Unlink instead of cascading: the listings themselves are still valid
+    # data worth keeping even if the saved search that found them is removed.
+    db.query(Listing).filter(Listing.search_id == search_id).update({"search_id": None})
     db.delete(search)
     db.commit()
 

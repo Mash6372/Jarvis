@@ -12,35 +12,75 @@ async function fetchJSON(url, options) {
   return res.status === 204 ? null : res.json();
 }
 
-async function loadSearches() {
-  const searches = await fetchJSON(`${API_BASE}/api/searches`);
-  const container = document.getElementById("searches-list");
-  container.innerHTML = "";
-  for (const s of searches) {
-    const chip = document.createElement("div");
-    chip.className = "chip";
-    chip.innerHTML = `<span>${s.name} (${s.city}${s.zone ? " - " + s.zone : ""})</span>`;
+let allSearches = [];
 
+async function loadSearches() {
+  allSearches = await fetchJSON(`${API_BASE}/api/searches`);
+  renderSearchesTable();
+  populateSearchSelects();
+}
+
+function renderSearchesTable() {
+  const tbody = document.getElementById("searches-body");
+  tbody.innerHTML = "";
+
+  for (const s of allSearches) {
+    const tr = document.createElement("tr");
+    const priceRange = `${s.min_price != null ? eur(s.min_price) : "-"} – ${s.max_price != null ? eur(s.max_price) : "-"}`;
+    const sizeRange = `${s.min_size_sqm ?? "-"} – ${s.max_size_sqm ?? "-"}`;
+    tr.innerHTML = `
+      <td></td>
+      <td>${s.name}</td>
+      <td>${s.city}${s.zone ? " / " + s.zone : ""}</td>
+      <td>${priceRange}</td>
+      <td>${sizeRange}</td>
+      <td>${s.min_rooms ?? "-"}</td>
+      <td>${(s.portals || []).join(", ") || "-"}</td>
+      <td>${s.listings_count}</td>
+      <td></td>
+    `;
+
+    const delTd = tr.children[0];
+    const delBtn = document.createElement("button");
+    delBtn.className = "delete-btn";
+    delBtn.textContent = "✕";
+    delBtn.title = "Elimina ricerca";
+    delBtn.onclick = () => deleteSearch(s.id, s.name);
+    delTd.appendChild(delBtn);
+
+    const runTd = tr.children[tr.children.length - 1];
     const runBtn = document.createElement("button");
+    runBtn.className = "run-btn";
     runBtn.textContent = "▶";
     runBtn.title = "Esegui ora";
-    runBtn.style.color = "#22c55e";
     runBtn.onclick = async () => {
       await fetchJSON(`${API_BASE}/api/searches/${s.id}/run-now`, { method: "POST" });
       alert("Ricerca avviata in background, torna tra qualche minuto e ricarica gli annunci.");
     };
+    runTd.appendChild(runBtn);
 
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "✕";
-    delBtn.onclick = async () => {
-      await fetchJSON(`${API_BASE}/api/searches/${s.id}`, { method: "DELETE" });
-      loadSearches();
-    };
-
-    chip.appendChild(runBtn);
-    chip.appendChild(delBtn);
-    container.appendChild(chip);
+    tbody.appendChild(tr);
   }
+}
+
+async function deleteSearch(id, name) {
+  if (!confirm(`Eliminare la ricerca "${name}"? Gli annunci già trovati resteranno salvati, solo scollegati dalla ricerca.`)) return;
+  if (!confirm(`Confermi definitivamente l'eliminazione di "${name}"? Questa azione non può essere annullata.`)) return;
+  await fetchJSON(`${API_BASE}/api/searches/${id}`, { method: "DELETE" });
+  await loadSearches();
+  loadListings();
+}
+
+function populateSearchSelects() {
+  const options = allSearches.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+
+  const filterSelect = document.getElementById("f-search");
+  const currentFilterValue = filterSelect.value;
+  filterSelect.innerHTML = `<option value="">Tutte le ricerche</option>` + options;
+  filterSelect.value = currentFilterValue;
+
+  const manualSelect = document.getElementById("manual-search-select");
+  manualSelect.innerHTML = `<option value="">Nessuna ricerca associata</option>` + options;
 }
 
 document.getElementById("search-form").addEventListener("submit", async (e) => {
@@ -76,6 +116,7 @@ function scoreClass(score) {
 function buildFilterQuery() {
   const params = new URLSearchParams();
   const map = {
+    "f-q": "q",
     "f-city": "city",
     "f-zone": "zone",
     "f-min-price": "min_price",
@@ -83,8 +124,13 @@ function buildFilterQuery() {
     "f-min-size": "min_size_sqm",
     "f-max-size": "max_size_sqm",
     "f-min-rooms": "min_rooms",
+    "f-max-rooms": "max_rooms",
+    "f-min-bathrooms": "min_bathrooms",
+    "f-max-bathrooms": "max_bathrooms",
+    "f-floor": "floor",
     "f-condition": "condition",
     "f-source": "source",
+    "f-search": "search_id",
     "f-sort": "sort_by",
   };
   for (const [id, key] of Object.entries(map)) {
@@ -102,10 +148,13 @@ async function loadListings() {
 
   for (const l of listings) {
     const deal = l.deal || {};
+    const searchName = allSearches.find((s) => s.id === l.search_id)?.name || "-";
     const tr = document.createElement("tr");
     tr.innerHTML = `
+      <td></td>
       <td>${l.title || "-"}</td>
       <td><span class="badge">${l.source}</span></td>
+      <td>${searchName}</td>
       <td>${l.city || "-"}${l.zone ? " / " + l.zone : ""}</td>
       <td>${eur(l.price)}</td>
       <td>${num(l.size_sqm)}</td>
@@ -120,8 +169,24 @@ async function loadListings() {
       <td class="${scoreClass(deal.deal_score)}">${deal.deal_score ?? "-"} <small>(${deal.confidence || "-"})</small></td>
       <td><a class="listing-link" href="${l.url}" target="_blank" rel="noopener">Apri</a></td>
     `;
+
+    const delTd = tr.children[0];
+    const delBtn = document.createElement("button");
+    delBtn.className = "delete-btn";
+    delBtn.textContent = "✕";
+    delBtn.title = "Elimina annuncio";
+    delBtn.onclick = () => deleteListing(l.id, l.title);
+    delTd.appendChild(delBtn);
+
     tbody.appendChild(tr);
   }
+}
+
+async function deleteListing(id, title) {
+  if (!confirm(`Eliminare l'annuncio "${title || id}"?`)) return;
+  await fetchJSON(`${API_BASE}/api/listings/${id}`, { method: "DELETE" });
+  loadListings();
+  loadSearches();
 }
 
 document.getElementById("apply-filters").addEventListener("click", loadListings);
@@ -141,6 +206,7 @@ document.getElementById("manual-form").addEventListener("submit", async (e) => {
     city: form.get("city"),
     zone: form.get("zone") || null,
     condition: form.get("condition"),
+    search_id: form.get("search_id") ? Number(form.get("search_id")) : null,
   };
   try {
     await fetchJSON(`${API_BASE}/api/listings/manual`, {
@@ -149,11 +215,14 @@ document.getElementById("manual-form").addEventListener("submit", async (e) => {
       body: JSON.stringify(payload),
     });
     e.target.reset();
+    await loadSearches();
     loadListings();
   } catch (err) {
     alert("Errore aggiunta annuncio: " + err.message);
   }
 });
 
-loadSearches();
-loadListings();
+(async () => {
+  await loadSearches();
+  loadListings();
+})();
