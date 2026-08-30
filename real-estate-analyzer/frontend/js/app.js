@@ -125,19 +125,31 @@ async function loadListings() {
 
 document.getElementById("apply-filters").addEventListener("click", loadListings);
 
-document.getElementById("import-btn").addEventListener("click", async () => {
-  const url = document.getElementById("import-url").value.trim();
-  if (!url) return;
+document.getElementById("manual-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = new FormData(e.target);
+  const payload = {
+    url: form.get("url"),
+    source: form.get("source"),
+    title: form.get("title") || null,
+    price: Number(form.get("price")),
+    size_sqm: Number(form.get("size_sqm")),
+    rooms: form.get("rooms") ? Number(form.get("rooms")) : null,
+    bathrooms: form.get("bathrooms") ? Number(form.get("bathrooms")) : null,
+    city: form.get("city"),
+    zone: form.get("zone") || null,
+    condition: form.get("condition"),
+  };
   try {
-    await fetchJSON(`${API_BASE}/api/listings/import`, {
+    await fetchJSON(`${API_BASE}/api/listings/manual`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify(payload),
     });
-    document.getElementById("import-url").value = "";
+    e.target.reset();
     loadListings();
   } catch (err) {
-    alert("Errore importazione: " + err.message);
+    alert("Errore aggiunta annuncio: " + err.message);
   }
 });
 

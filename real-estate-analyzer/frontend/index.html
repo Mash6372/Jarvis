@@ -60,10 +60,33 @@
       <button id="apply-filters">Applica filtri</button>
     </div>
 
-    <div class="import-box">
-      <input type="text" id="import-url" placeholder="Incolla il link di un annuncio (immobiliare.it o idealista.it) per importarlo subito">
-      <button id="import-btn">Importa annuncio</button>
-    </div>
+    <details class="manual-box">
+      <summary>+ Aggiungi annuncio manualmente</summary>
+      <p class="hint">immobiliare.it e idealista.it bloccano l'estrazione automatica dei dati: apri l'annuncio nel browser, leggi i valori e inseriscili qui.</p>
+      <form id="manual-form" class="manual-form">
+        <input type="text" name="url" placeholder="Link annuncio (per riferimento)" required>
+        <select name="source">
+          <option value="immobiliare.it">immobiliare.it</option>
+          <option value="idealista.it">idealista.it</option>
+          <option value="manuale">Altro</option>
+        </select>
+        <input type="text" name="title" placeholder="Titolo/descrizione breve">
+        <input type="number" name="price" placeholder="Prezzo &euro;" required>
+        <input type="number" name="size_sqm" placeholder="Superficie mq" required>
+        <input type="number" name="rooms" placeholder="Locali">
+        <input type="number" name="bathrooms" placeholder="Bagni">
+        <input type="text" name="city" placeholder="Citt&agrave;" required>
+        <input type="text" name="zone" placeholder="Zona">
+        <select name="condition">
+          <option value="unknown">Condizione non specificata</option>
+          <option value="ottimo">Ottimo/Nuovo</option>
+          <option value="buono">Buono</option>
+          <option value="da_ristrutturare">Da ristrutturare</option>
+          <option value="grezzo">Grezzo</option>
+        </select>
+        <button type="submit">Aggiungi annuncio</button>
+      </form>
+    </details>
 
     <div id="listings-table-wrap">
       <table id="listings-table">

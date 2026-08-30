@@ -68,6 +68,33 @@ button {
 
 button:hover { filter: brightness(1.05); }
 
+.manual-box {
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 12px;
+}
+
+.manual-box summary {
+  cursor: pointer;
+  padding: 8px 0;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.manual-box .hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
+.manual-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;

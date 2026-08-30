@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Listing
 from app.schemas import DealAnalysis, ListingFilter, ListingOut
+from app.scrapers.base import ScrapedListing
 from app.scrapers.idealista import IdealistaScraper
 from app.scrapers.immobiliare import ImmobiliareScraper
 from app.services.analysis import analyze_deal
@@ -108,6 +109,50 @@ def import_from_link(payload: ImportLinkRequest, db: Session = Depends(get_db)):
     if not scraped:
         raise HTTPException(422, "Impossibile estrarre i dati dall'annuncio: struttura pagina non riconosciuta.")
 
+    listing = upsert_listing(db, scraped)
+    deal_result = analyze_deal(db, listing)
+    return ListingWithDeal(
+        **ListingOut.model_validate(listing).model_dump(),
+        deal=DealAnalysis(listing_id=listing.id, **deal_result.__dict__),
+    )
+
+
+class ManualListingIn(BaseModel):
+    """Both immobiliare.it and idealista.it block automated fetches (see
+    ImportLinkRequest above) — this is the reliable path: you read the
+    listing yourself and type in the numbers that matter for the analysis."""
+
+    url: str
+    source: str = "manuale"
+    title: str | None = None
+    price: float
+    size_sqm: float
+    rooms: int | None = None
+    bathrooms: int | None = None
+    floor: str | None = None
+    city: str
+    zone: str | None = None
+    address: str | None = None
+    condition: str = "unknown"
+
+
+@router.post("/manual", response_model=ListingWithDeal, status_code=201)
+def add_manual_listing(payload: ManualListingIn, db: Session = Depends(get_db)):
+    scraped = ScrapedListing(
+        source=payload.source,
+        source_id=payload.url,
+        url=payload.url,
+        title=payload.title,
+        price=payload.price,
+        size_sqm=payload.size_sqm,
+        rooms=payload.rooms,
+        bathrooms=payload.bathrooms,
+        floor=payload.floor,
+        city=payload.city,
+        zone=payload.zone,
+        address=payload.address,
+        condition=payload.condition,
+    )
     listing = upsert_listing(db, scraped)
     deal_result = analyze_deal(db, listing)
     return ListingWithDeal(
