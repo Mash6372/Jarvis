@@ -101,9 +101,12 @@ def import_from_link(payload: ImportLinkRequest, db: Session = Depends(get_db)):
         raise HTTPException(400, "URL non riconosciuto (portali supportati: immobiliare.it, idealista.it)")
 
     scraper = PORTAL_SCRAPERS[portal]()
-    scraped = scraper.parse_listing_page(payload.url)
+    try:
+        scraped = scraper.parse_listing_page(payload.url)
+    except Exception as exc:  # noqa: BLE001 surface the real cause to the caller
+        raise HTTPException(422, f"Impossibile estrarre i dati dall'annuncio: {exc}")
     if not scraped:
-        raise HTTPException(422, "Impossibile estrarre i dati dall'annuncio: pagina non raggiungibile o struttura non riconosciuta.")
+        raise HTTPException(422, "Impossibile estrarre i dati dall'annuncio: struttura pagina non riconosciuta.")
 
     listing = upsert_listing(db, scraped)
     deal_result = analyze_deal(db, listing)

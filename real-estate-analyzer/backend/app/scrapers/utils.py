@@ -52,9 +52,17 @@ def throttle(domain: str) -> None:
     _last_request_at[domain] = time.monotonic()
 
 
+class RobotsDisallowed(RuntimeError):
+    """Raised instead of silently returning None, so a blocked scrape shows
+    up as a clear error in ScrapeRun.error_message rather than looking like
+    a successful run that just happened to find zero listings."""
+
+
 def polite_get(client: httpx.Client, url: str) -> httpx.Response | None:
     if not is_allowed_by_robots(url):
-        return None
+        raise RobotsDisallowed(
+            f"robots.txt vieta il fetch di {url} (o il file robots.txt non è raggiungibile)."
+        )
     throttle(_domain(url))
     response = client.get(url, headers={"User-Agent": settings.user_agent}, timeout=settings.request_timeout_seconds)
     response.raise_for_status()

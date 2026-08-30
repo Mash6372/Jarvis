@@ -67,8 +67,6 @@ class ImmobiliareScraper(BaseScraper):
         for page in range(1, max(1, filters.max_pages) + 1):
             url = self._search_url(filters, page)
             response = polite_get(self.client, url)
-            if response is None:
-                break
             data = extract_next_data(response.text)
             if not data:
                 break
@@ -127,8 +125,6 @@ class ImmobiliareScraper(BaseScraper):
 
     def parse_listing_page(self, url: str) -> ScrapedListing | None:
         response = polite_get(self.client, url)
-        if response is None:
-            return None
 
         json_ld = extract_json_ld(response.text)
         real_estate = next((b for b in json_ld if "RealEstate" in str(b.get("@type", ""))), None)
