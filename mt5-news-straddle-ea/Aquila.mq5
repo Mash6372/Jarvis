@@ -1,89 +1,71 @@
 //+------------------------------------------------------------------+
 //|                                                    Aquila.mq5     |
 //|  AQUILA - sempre in prima linea, scatta al momento giusto.        |
-//|  Strategia "straddle sulle news" con due eventi indipendenti      |
-//|  (es. NFP e FOMC). Tutte le impostazioni si fanno nelle proprieta'|
-//|  dell'EA (Inputs): il pannello sul grafico e' SOLO LETTURA e      |
-//|  mostra in tempo reale i valori attivi, con pochi pulsanti per    |
-//|  Trading ON/OFF, BE dopo parziale ON/OFF e annullamento manuale.  |
 //|                                                                    |
-//|  Per ogni evento attivo, l'EA:                                    |
-//|   1) osserva le candele M5 nei minuti precedenti l'orario della   |
-//|      notizia, aggiornando in tempo reale massimo e minimo;        |
-//|   2) pochi secondi prima dell'orario (default 3) congela il       |
-//|      range e piazza due ordini pendenti in OCO:                   |
+//|  Strategia "straddle sulle news": il giorno in cui esce una       |
+//|  notizia ad alto impatto (NFP, FOMC, o qualsiasi altra), apri le  |
+//|  proprieta' dell'EA e scrivi solo l'orario italiano di uscita     |
+//|  (InpNewsTime). L'EA fa tutto da solo:                            |
+//|   1) osserva le candele M5 nei 10 minuti precedenti l'orario,     |
+//|      aggiornando in tempo reale massimo e minimo;                 |
+//|   2) 3 secondi prima dell'orario congela il range e piazza due    |
+//|      ordini pendenti in OCO:                                      |
 //|        - Buy Stop = massimo range + X pips                        |
 //|        - Sell Stop = minimo range - X pips                        |
 //|   3) quando uno dei due scatta, cancella l'altro;                 |
-//|   4) se nessuno dei due scatta entro un tempo massimo, li          |
-//|      cancella entrambi;                                           |
+//|   4) se nessuno dei due scatta entro 15 minuti, li cancella       |
+//|      entrambi;                                                    |
 //|   5) sulla posizione aperta, se impostata una chiusura parziale,  |
 //|      chiude una percentuale al target indicato e (opzionale)      |
 //|      sposta lo Stop Loss a pareggio sul resto.                    |
+//|                                                                    |
+//|  Il pannello sul grafico e' di sola lettura: mostra lo stato in   |
+//|  tempo reale e ha 2 pulsanti (Trading ON/OFF, Annulla). Disegna   |
+//|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "4.00"
+#property version   "5.00"
 #property strict
 
 #include <Trade\Trade.mqh>
 
 //================================= INPUT ==================================
-//  Tutte le impostazioni si fanno QUI (proprieta' dell'EA). Il       //
-//  pannello sul grafico e' solo di lettura/controllo rapido.         //
+//  Solo quello che serve davvero. Il giorno della notizia, apri le   //
+//  proprieta' dell'EA, scrivi l'orario in InpNewsTime e premi OK:    //
+//  l'EA si riavvia e si mette subito a osservare il mercato.         //
 
-input group "=== Evento 1 (es. NFP) - orario italiano, vale per OGGI ==="
-input string InpEvent1Time           = "14:30"; // Orario (HH:MM). Se gia' passato oggi, l'EA lo sposta a domani
+input group "=== Notizia ==="
+input string InpNewsTime             = "14:30"; // Orario italiano di uscita (HH:MM), vale per OGGI
 
-input group "=== Evento 2 (es. FOMC) - orario italiano, vale per OGGI ==="
-input string InpEvent2Time           = "20:00"; // Orario (HH:MM). Se gia' passato oggi, l'EA lo sposta a domani
-
-input group "=== Fuso orario ==="
+input group "=== Fuso orario (imposta una volta sola) ==="
 input int    InpServerMinusItalyMin  = 60;   // Differenza in MINUTI tra orario server del broker e orario italiano
 
-input group "=== Finestra di osservazione ==="
-input int    InpLookbackMinutes      = 10;   // Minuti da guardare prima della notizia (10 = 2 candele M5)
-input int    InpSecondsBeforeNews    = 3;    // Secondi prima della notizia in cui si congela il range e si piazzano gli ordini
-
-input group "=== Ordini pendenti ==="
+input group "=== Ordini ==="
 input double InpPipsDistance         = 3.0;  // Distanza in pips tra massimo/minimo e prezzo di entrata
 input double InpLotSize              = 0.10; // Lotti per ogni ordine
 input double InpStopLossPips         = 20.0; // Stop Loss in pips (0 = nessuno)
 input double InpTakeProfitPips       = 0.0;  // Take Profit finale in pips (0 = nessuno)
 input double InpPartialClosePercent  = 50.0; // % di posizione da chiudere al target parziale (0 = disabilitata)
 input double InpPartialTriggerPips   = 15.0; // Pips di profitto per far scattare la chiusura parziale
-input bool   InpMoveToBreakevenAfterPartial = true; // Sposta lo Stop Loss a pareggio dopo la chiusura parziale (stato iniziale, poi commutabile dal pannello)
-input int    InpExpirationMinutes    = 15;   // Minuti dopo la notizia dopo cui annullare gli ordini non eseguiti
-input int    InpSlippagePoints       = 50;   // Deviazione massima in punti per l'invio ordini
-input ulong  InpMagicNumber          = 20260825; // Magic number
 
 input group "=== Sicurezza ==="
-input bool   InpEnableTrading        = true; // Stato iniziale del pulsante Trading ON/OFF (false = simulazione)
-
-input group "=== Pannello su grafico (sola lettura) ==="
-input bool   InpShowPanel            = true; // Mostra il pannello di stato/controllo sul grafico
-input int    InpPanelX               = 10;   // Posizione orizzontale del pannello (pixel dal bordo)
-input int    InpPanelY               = 20;   // Posizione verticale del pannello (pixel dal bordo)
-input double InpPanelScale           = 1.0;  // Scala dimensioni pannello (1.0 = normale, 1.5 = piu' grande, 0.7 = piu' piccolo)
+input bool   InpEnableTrading        = true; // false = simulazione: calcola i livelli ma non invia ordini reali
 
 //================================ STATO =====================================
+//  Parametri tecnici fissi (non serve toccarli): 10 minuti di        //
+//  osservazione (2 candele M5), congela il range 3 secondi prima     //
+//  della notizia, cancella gli ordini non eseguiti dopo 15 minuti.   //
 
-#define PANEL_LINE_H_BASE 16
-#define PANEL_FONT_BASE   8
+#define LOOKBACK_MINUTES     10
+#define SECONDS_BEFORE_NEWS  3
+#define EXPIRATION_MINUTES   15
+#define SLIPPAGE_POINTS      50
+#define MAGIC_NUMBER         20260825
 
-int    g_panelFont  = PANEL_FONT_BASE;
-int    g_lineH      = PANEL_LINE_H_BASE;
-double g_panelScale = 1.0;
-
-//+------------------------------------------------------------------+
-//| Applica la scala corrente del pannello a una dimensione in pixel  |
-//+------------------------------------------------------------------+
-int SC(const int pixels)
-  {
-   double scale = g_panelScale;
-   if(scale < 0.5) scale = 0.5;
-   if(scale > 3.0) scale = 3.0;
-   return (int)MathRound(pixels * scale);
-  }
+#define PANEL_LINE_H  16
+#define PANEL_FONT    8
+#define PANEL_X       10
+#define PANEL_Y       20
 
 enum EventState
   {
@@ -93,10 +75,9 @@ enum EventState
    STATE_DONE     = 3  // evento concluso
   };
 
-struct CategoryState
+struct EventInfo
   {
    bool        active;
-   string      label;
    datetime    time;
    EventState  state;
    double      rangeHigh;
@@ -110,8 +91,7 @@ struct CategoryState
    double      sellPricePlaced;
   };
 
-CategoryState g_nfp;
-CategoryState g_fomc;
+EventInfo g_event;
 
 bool     g_tradingEnabledRuntime = true;
 bool     g_moveToBreakeven       = true;
@@ -120,23 +100,22 @@ string   g_panelPrefix = "AQ_";
 CTrade   trade;
 
 //+------------------------------------------------------------------+
-//| Azzera una categoria (Evento 1 o Evento 2)                         |
+//| Azzera l'evento                                                    |
 //+------------------------------------------------------------------+
-void ResetCategory(CategoryState &cat, const string label)
+void ResetEvent()
   {
-   cat.active         = false;
-   cat.label          = label;
-   cat.time           = 0;
-   cat.state          = STATE_WAITING;
-   cat.rangeHigh      = -1;
-   cat.rangeLow       = -1;
-   cat.rangeValid     = false;
-   cat.buyTicket      = 0;
-   cat.sellTicket     = 0;
-   cat.positionTicket = 0;
-   cat.partialDone    = false;
-   cat.buyPricePlaced  = 0;
-   cat.sellPricePlaced = 0;
+   g_event.active         = false;
+   g_event.time           = 0;
+   g_event.state          = STATE_WAITING;
+   g_event.rangeHigh      = -1;
+   g_event.rangeLow       = -1;
+   g_event.rangeValid     = false;
+   g_event.buyTicket      = 0;
+   g_event.sellTicket     = 0;
+   g_event.positionTicket = 0;
+   g_event.partialDone    = false;
+   g_event.buyPricePlaced  = 0;
+   g_event.sellPricePlaced = 0;
   }
 
 //+------------------------------------------------------------------+
@@ -161,61 +140,54 @@ datetime ComputeTargetTime(string timeStr)
 
    datetime serverTarget = italyTarget + InpServerMinusItalyMin * 60;
 
-   if(serverTarget + InpExpirationMinutes * 60 < TimeCurrent())
+   if(serverTarget + EXPIRATION_MINUTES * 60 < TimeCurrent())
       serverTarget += 24 * 3600; // era gia' passato oggi: vale per domani
 
    return(serverTarget);
   }
 
 //+------------------------------------------------------------------+
-//| Imposta/riarma una categoria con un orario italiano (HH:MM),      |
+//| Imposta/riarma l'evento con l'orario italiano configurato,        |
 //| valido per oggi (o domani se l'orario di oggi e' gia' passato)    |
 //+------------------------------------------------------------------+
-bool ArmCategory(CategoryState &cat, string timeStr)
+bool ArmEvent(string timeStr)
   {
    StringTrimLeft(timeStr);
    StringTrimRight(timeStr);
    if(timeStr == "")
      {
-      PrintFormat("Aquila [%s]: nessun orario impostato nelle proprieta', categoria disattivata.", cat.label);
-      ResetCategory(cat, cat.label);
+      Print("Aquila: nessun orario impostato in InpNewsTime, EA inattivo.");
+      ResetEvent();
       return(false);
      }
 
    datetime serverTime = ComputeTargetTime(timeStr);
    if(serverTime <= 0)
      {
-      PrintFormat("Aquila [%s]: orario non valido '%s' nelle proprieta' (usa il formato HH:MM).", cat.label, timeStr);
+      PrintFormat("Aquila: orario non valido '%s' (usa il formato HH:MM).", timeStr);
       return(false);
      }
 
-   ResetCategory(cat, cat.label);
-   cat.time   = serverTime;
-   cat.active = true;
+   ResetEvent();
+   g_event.time   = serverTime;
+   g_event.active = true;
 
-   PrintFormat("Aquila [%s]: evento impostato -> %s (orario server)", cat.label, TimeToString(serverTime, TIME_DATE | TIME_MINUTES));
+   PrintFormat("Aquila: evento impostato -> %s (orario server)", TimeToString(serverTime, TIME_DATE | TIME_MINUTES));
    return(true);
   }
 
 //+------------------------------------------------------------------+
 int OnInit()
   {
-   trade.SetExpertMagicNumber(InpMagicNumber);
-   trade.SetDeviationInPoints(InpSlippagePoints);
+   trade.SetExpertMagicNumber(MAGIC_NUMBER);
+   trade.SetDeviationInPoints(SLIPPAGE_POINTS);
    trade.SetTypeFillingBySymbol(_Symbol);
 
-   g_panelScale = InpPanelScale;
-   g_panelFont  = SC(PANEL_FONT_BASE);
-   g_lineH      = SC(PANEL_LINE_H_BASE);
-
    g_tradingEnabledRuntime = InpEnableTrading;
-   g_moveToBreakeven       = InpMoveToBreakevenAfterPartial;
+   g_moveToBreakeven       = true;
 
-   ResetCategory(g_nfp, "Evento 1");
-   ResetCategory(g_fomc, "Evento 2");
-
-   ArmCategory(g_nfp, InpEvent1Time);
-   ArmCategory(g_fomc, InpEvent2Time);
+   ResetEvent();
+   ArmEvent(InpNewsTime);
 
    EventSetTimer(1);
    CreatePanel();
@@ -245,11 +217,11 @@ double PipSize()
 
 //+------------------------------------------------------------------+
 //| Aggiorna massimo/minimo delle candele M5 nella finestra           |
-//| [orario_evento - LookbackMinutes*60, orario_evento)               |
+//| [orario_evento - 10min, orario_evento)                            |
 //+------------------------------------------------------------------+
-bool UpdateRange(CategoryState &cat)
+bool UpdateRange()
   {
-   int barsNeeded = MathMax(InpLookbackMinutes / 5 + 5, 10);
+   int barsNeeded = MathMax(LOOKBACK_MINUTES / 5 + 5, 10);
 
    MqlRates rates[];
    ArraySetAsSeries(rates, false);
@@ -257,8 +229,8 @@ bool UpdateRange(CategoryState &cat)
    if(copied <= 0)
       return(false);
 
-   datetime windowStart = cat.time - InpLookbackMinutes * 60;
-   datetime windowEnd   = cat.time; // esclusivo
+   datetime windowStart = g_event.time - LOOKBACK_MINUTES * 60;
+   datetime windowEnd   = g_event.time; // esclusivo
 
    double high = -1, low = -1;
    bool found = false;
@@ -283,9 +255,9 @@ bool UpdateRange(CategoryState &cat)
 
    if(found)
      {
-      cat.rangeHigh  = high;
-      cat.rangeLow   = low;
-      cat.rangeValid = true;
+      g_event.rangeHigh  = high;
+      g_event.rangeLow   = low;
+      g_event.rangeValid = true;
      }
 
    return(found);
@@ -308,13 +280,13 @@ double NormalizeVolume(double volume)
 //+------------------------------------------------------------------+
 //| Piazza i due ordini pendenti (Buy Stop / Sell Stop)                |
 //+------------------------------------------------------------------+
-void PlaceOrders(CategoryState &cat)
+void PlaceOrders()
   {
-   if(!cat.rangeValid)
+   if(!g_event.rangeValid)
      {
-      PrintFormat("Aquila [%s]: range non valido, ordini NON piazzati.", cat.label);
-      cat.state  = STATE_DONE;
-      cat.active = false;
+      Print("Aquila: range non valido, ordini NON piazzati.");
+      g_event.state  = STATE_DONE;
+      g_event.active = false;
       return;
      }
 
@@ -323,8 +295,8 @@ void PlaceOrders(CategoryState &cat)
    double pip    = PipSize();
    double dist   = InpPipsDistance * pip;
 
-   double buyPrice  = NormalizeDouble(cat.rangeHigh + dist, digits);
-   double sellPrice = NormalizeDouble(cat.rangeLow  - dist, digits);
+   double buyPrice  = NormalizeDouble(g_event.rangeHigh + dist, digits);
+   double sellPrice = NormalizeDouble(g_event.rangeLow  - dist, digits);
 
    long stopLevelPts = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL);
    double stopLevel  = stopLevelPts * point;
@@ -352,36 +324,36 @@ void PlaceOrders(CategoryState &cat)
      }
 
    double volume = NormalizeVolume(InpLotSize);
-   datetime expiration = cat.time + InpExpirationMinutes * 60;
+   datetime expiration = g_event.time + EXPIRATION_MINUTES * 60;
 
-   PrintFormat("Aquila [%s]: range [%s , %s], BuyStop=%s SellStop=%s",
-               cat.label, DoubleToString(cat.rangeLow, digits), DoubleToString(cat.rangeHigh, digits),
+   PrintFormat("Aquila: range [%s , %s], BuyStop=%s SellStop=%s",
+               DoubleToString(g_event.rangeLow, digits), DoubleToString(g_event.rangeHigh, digits),
                DoubleToString(buyPrice, digits), DoubleToString(sellPrice, digits));
 
    if(!g_tradingEnabledRuntime)
      {
       Print("Aquila: trading disabilitato (pannello), ordini NON inviati (simulazione).");
-      cat.state  = STATE_DONE;
-      cat.active = false;
+      g_event.state  = STATE_DONE;
+      g_event.active = false;
       return;
      }
 
-   string cmt = cat.label + " " + TimeToString(cat.time, TIME_DATE | TIME_MINUTES);
+   string cmt = "Aquila " + TimeToString(g_event.time, TIME_DATE | TIME_MINUTES);
 
-   cat.buyPricePlaced  = buyPrice;
-   cat.sellPricePlaced = sellPrice;
+   g_event.buyPricePlaced  = buyPrice;
+   g_event.sellPricePlaced = sellPrice;
 
    if(trade.BuyStop(volume, buyPrice, _Symbol, sl_buy, tp_buy, ORDER_TIME_SPECIFIED, expiration, cmt))
-      cat.buyTicket = trade.ResultOrder();
+      g_event.buyTicket = trade.ResultOrder();
    else
       PrintFormat("Aquila: errore invio BuyStop: %d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
 
    if(trade.SellStop(volume, sellPrice, _Symbol, sl_sell, tp_sell, ORDER_TIME_SPECIFIED, expiration, cmt))
-      cat.sellTicket = trade.ResultOrder();
+      g_event.sellTicket = trade.ResultOrder();
    else
       PrintFormat("Aquila: errore invio SellStop: %d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
 
-   cat.state = STATE_ARMED;
+   g_event.state = STATE_ARMED;
   }
 
 //+------------------------------------------------------------------+
@@ -397,93 +369,82 @@ bool OrderStillPending(ulong ticket)
 //+------------------------------------------------------------------+
 //| Gestisce OCO e scadenza mentre gli ordini sono pendenti (ARMED)   |
 //+------------------------------------------------------------------+
-void ManageArmedCategory(CategoryState &cat)
+void ManageArmedEvent()
   {
-   bool buyPending  = OrderStillPending(cat.buyTicket);
-   bool sellPending = OrderStillPending(cat.sellTicket);
+   bool buyPending  = OrderStillPending(g_event.buyTicket);
+   bool sellPending = OrderStillPending(g_event.sellTicket);
 
-   if(cat.buyTicket != 0 && !buyPending && sellPending)
+   if(g_event.buyTicket != 0 && !buyPending && sellPending)
      {
-      trade.OrderDelete(cat.sellTicket);
-      cat.state = STATE_POSITION;
-      PrintFormat("Aquila [%s]: BuyStop eseguito, SellStop annullato.", cat.label);
+      trade.OrderDelete(g_event.sellTicket);
+      g_event.state = STATE_POSITION;
+      Print("Aquila: BuyStop eseguito, SellStop annullato.");
       return;
      }
-   if(cat.sellTicket != 0 && !sellPending && buyPending)
+   if(g_event.sellTicket != 0 && !sellPending && buyPending)
      {
-      trade.OrderDelete(cat.buyTicket);
-      cat.state = STATE_POSITION;
-      PrintFormat("Aquila [%s]: SellStop eseguito, BuyStop annullato.", cat.label);
+      trade.OrderDelete(g_event.buyTicket);
+      g_event.state = STATE_POSITION;
+      Print("Aquila: SellStop eseguito, BuyStop annullato.");
       return;
      }
    if(!buyPending && !sellPending)
      {
-      cat.state = STATE_POSITION; // ManagePosition capira' se esiste davvero una posizione
+      g_event.state = STATE_POSITION; // ManagePosition capira' se esiste davvero una posizione
       return;
      }
 
-   if(TimeCurrent() - cat.time > InpExpirationMinutes * 60)
+   if(TimeCurrent() - g_event.time > EXPIRATION_MINUTES * 60)
      {
-      if(buyPending)  trade.OrderDelete(cat.buyTicket);
-      if(sellPending) trade.OrderDelete(cat.sellTicket);
-      cat.state = STATE_POSITION;
-      PrintFormat("Aquila [%s]: scaduto, ordini pendenti residui cancellati.", cat.label);
+      if(buyPending)  trade.OrderDelete(g_event.buyTicket);
+      if(sellPending) trade.OrderDelete(g_event.sellTicket);
+      g_event.state = STATE_POSITION;
+      Print("Aquila: scaduto, ordini pendenti residui cancellati.");
      }
   }
 
 //+------------------------------------------------------------------+
-//| true se il ticket di posizione e' gia' tracciato da un'altra      |
-//| categoria (evita che Evento 1 e 2 si "rubino" la stessa posizione)|
+//| Trova/gestisce la posizione aperta: chiusura parziale al target   |
+//| e spostamento a pareggio                                           |
 //+------------------------------------------------------------------+
-bool PositionAlreadyOwned(ulong ticket)
+void ManagePosition()
   {
-   return(ticket == g_nfp.positionTicket || ticket == g_fomc.positionTicket);
-  }
-
-//+------------------------------------------------------------------+
-//| Trova/gestisce la posizione aperta dell'evento: chiusura          |
-//| parziale al target e spostamento a pareggio                       |
-//+------------------------------------------------------------------+
-void ManagePosition(CategoryState &cat)
-  {
-   if(cat.positionTicket == 0)
+   if(g_event.positionTicket == 0)
      {
       for(int i = 0; i < PositionsTotal(); i++)
         {
          ulong ticket = PositionGetTicket(i);
          if(ticket == 0 || !PositionSelectByTicket(ticket))
             continue;
-         if(PositionGetInteger(POSITION_MAGIC) != (long)InpMagicNumber)
+         if(PositionGetInteger(POSITION_MAGIC) != (long)MAGIC_NUMBER)
             continue;
          if(PositionGetString(POSITION_SYMBOL) != _Symbol)
             continue;
-         if(PositionAlreadyOwned(ticket))
-            continue;
 
-         cat.positionTicket = ticket;
-         cat.partialDone    = false;
+         g_event.positionTicket = ticket;
+         g_event.partialDone    = false;
          break;
         }
 
-      if(cat.positionTicket == 0)
+      if(g_event.positionTicket == 0)
         {
          // nessuno dei due ordini e' mai scattato
-         cat.state  = STATE_DONE;
-         cat.active = false;
+         g_event.state  = STATE_DONE;
+         g_event.active = false;
          return;
         }
      }
 
-   if(!PositionSelectByTicket(cat.positionTicket))
+   if(!PositionSelectByTicket(g_event.positionTicket))
      {
-      PrintFormat("Aquila [%s]: posizione chiusa.", cat.label);
-      cat.positionTicket = 0;
-      cat.state  = STATE_DONE;
-      cat.active = false;
+      Print("Aquila: posizione chiusa.");
+      g_event.positionTicket = 0;
+      g_event.state  = STATE_DONE;
+      g_event.active = false;
       return;
      }
 
-   if(InpPartialClosePercent > 0 && !cat.partialDone)
+   if(InpPartialClosePercent > 0 && !g_event.partialDone)
      {
       double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
       long   posType   = PositionGetInteger(POSITION_TYPE);
@@ -498,80 +459,80 @@ void ManagePosition(CategoryState &cat)
 
          if(closeVol > 0 && closeVol < vol)
            {
-            if(trade.PositionClosePartial(cat.positionTicket, closeVol))
+            if(trade.PositionClosePartial(g_event.positionTicket, closeVol))
               {
-               cat.partialDone = true;
-               PrintFormat("Aquila [%s]: chiusura parziale %.1f%% eseguita a +%.1f pips.", cat.label, InpPartialClosePercent, profitPips);
+               g_event.partialDone = true;
+               PrintFormat("Aquila: chiusura parziale %.1f%% eseguita a +%.1f pips.", InpPartialClosePercent, profitPips);
 
-               if(g_moveToBreakeven && PositionSelectByTicket(cat.positionTicket))
-                  trade.PositionModify(cat.positionTicket, openPrice, PositionGetDouble(POSITION_TP));
+               if(g_moveToBreakeven && PositionSelectByTicket(g_event.positionTicket))
+                  trade.PositionModify(g_event.positionTicket, openPrice, PositionGetDouble(POSITION_TP));
               }
             else
-               PrintFormat("Aquila [%s]: errore chiusura parziale: %d %s", cat.label, trade.ResultRetcode(), trade.ResultRetcodeDescription());
+               PrintFormat("Aquila: errore chiusura parziale: %d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
            }
         }
      }
   }
 
 //+------------------------------------------------------------------+
-//| Annulla manualmente una categoria: cancella ordini pendenti e     |
-//| chiude l'eventuale posizione aperta (pulsante di emergenza)       |
+//| Annulla manualmente: cancella ordini pendenti e chiude             |
+//| l'eventuale posizione aperta (pulsante di emergenza)              |
 //+------------------------------------------------------------------+
-void CancelCategory(CategoryState &cat)
+void CancelEvent()
   {
-   if(!cat.active)
+   if(!g_event.active)
      {
-      PrintFormat("Aquila [%s]: nessun evento attivo da annullare.", cat.label);
+      Print("Aquila: nessun evento attivo da annullare.");
       return;
      }
 
-   if(cat.buyTicket != 0 && OrderStillPending(cat.buyTicket))
-      trade.OrderDelete(cat.buyTicket);
-   if(cat.sellTicket != 0 && OrderStillPending(cat.sellTicket))
-      trade.OrderDelete(cat.sellTicket);
-   if(cat.positionTicket != 0 && PositionSelectByTicket(cat.positionTicket))
-      trade.PositionClose(cat.positionTicket);
+   if(g_event.buyTicket != 0 && OrderStillPending(g_event.buyTicket))
+      trade.OrderDelete(g_event.buyTicket);
+   if(g_event.sellTicket != 0 && OrderStillPending(g_event.sellTicket))
+      trade.OrderDelete(g_event.sellTicket);
+   if(g_event.positionTicket != 0 && PositionSelectByTicket(g_event.positionTicket))
+      trade.PositionClose(g_event.positionTicket);
 
-   cat.state  = STATE_DONE;
-   cat.active = false;
-   PrintFormat("Aquila [%s]: annullato manualmente dal pannello.", cat.label);
+   g_event.state  = STATE_DONE;
+   g_event.active = false;
+   Print("Aquila: annullato manualmente dal pannello.");
   }
 
 //+------------------------------------------------------------------+
-//| Avanza la macchina a stati di una categoria                       |
+//| Avanza la macchina a stati                                        |
 //+------------------------------------------------------------------+
-void ProcessCategory(CategoryState &cat)
+void ProcessEvent()
   {
-   if(!cat.active)
+   if(!g_event.active)
       return;
 
-   if(cat.state == STATE_WAITING)
+   if(g_event.state == STATE_WAITING)
      {
-      long secToNews = (long)(cat.time - TimeCurrent());
+      long secToNews = (long)(g_event.time - TimeCurrent());
 
-      if(secToNews > InpSecondsBeforeNews)
+      if(secToNews > SECONDS_BEFORE_NEWS)
         {
-         UpdateRange(cat);
+         UpdateRange();
         }
       else if(secToNews > -60) // margine di tolleranza se il timer/tick arriva in ritardo
         {
-         UpdateRange(cat);
-         PlaceOrders(cat);
+         UpdateRange();
+         PlaceOrders();
         }
       else
         {
-         PrintFormat("Aquila [%s]: evento perso (EA avviato troppo tardi), disattivato.", cat.label);
-         cat.state  = STATE_DONE;
-         cat.active = false;
+         Print("Aquila: evento perso (EA avviato troppo tardi), disattivato.");
+         g_event.state  = STATE_DONE;
+         g_event.active = false;
         }
      }
-   else if(cat.state == STATE_ARMED)
+   else if(g_event.state == STATE_ARMED)
      {
-      ManageArmedCategory(cat);
+      ManageArmedEvent();
      }
-   else if(cat.state == STATE_POSITION)
+   else if(g_event.state == STATE_POSITION)
      {
-      ManagePosition(cat);
+      ManagePosition();
      }
   }
 
@@ -586,7 +547,7 @@ void PanelSetLabel(const string name, const int x, const int y, const string tex
       ObjectSetInteger(0, name, OBJPROP_CORNER, CORNER_LEFT_UPPER);
       ObjectSetInteger(0, name, OBJPROP_XDISTANCE, x);
       ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
-      ObjectSetInteger(0, name, OBJPROP_FONTSIZE, g_panelFont);
+      ObjectSetInteger(0, name, OBJPROP_FONTSIZE, PANEL_FONT);
       ObjectSetString(0, name, OBJPROP_FONT, "Consolas");
       ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
       ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
@@ -609,7 +570,7 @@ void PanelSetButton(const string name, const int x, const int y, const int w, co
       ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
       ObjectSetInteger(0, name, OBJPROP_XSIZE, w);
       ObjectSetInteger(0, name, OBJPROP_YSIZE, h);
-      ObjectSetInteger(0, name, OBJPROP_FONTSIZE, g_panelFont);
+      ObjectSetInteger(0, name, OBJPROP_FONTSIZE, PANEL_FONT);
       ObjectSetInteger(0, name, OBJPROP_COLOR, clrWhite);
       ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
       ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
@@ -634,33 +595,33 @@ string FormatCountdown(long secs)
   }
 
 //+------------------------------------------------------------------+
-//| Testo di stato sintetico per una categoria                        |
+//| Testo di stato sintetico dell'evento                              |
 //+------------------------------------------------------------------+
-string CategoryStatusText(const CategoryState &cat)
+string EventStatusText()
   {
-   if(!cat.active)
-      return("non impostato (vedi proprieta' EA)");
+   if(!g_event.active)
+      return("non impostato (scrivi l'orario in InpNewsTime nelle proprieta')");
 
-   if(cat.state == STATE_WAITING)
+   if(g_event.state == STATE_WAITING)
      {
-      long secsLeft = (long)(cat.time - TimeCurrent());
-      return StringFormat("%s - countdown %s", TimeToString(cat.time, TIME_DATE | TIME_MINUTES), FormatCountdown(secsLeft));
+      long secsLeft = (long)(g_event.time - TimeCurrent());
+      return StringFormat("%s - countdown %s", TimeToString(g_event.time, TIME_DATE | TIME_MINUTES), FormatCountdown(secsLeft));
      }
-   if(cat.state == STATE_ARMED)
+   if(g_event.state == STATE_ARMED)
       return("ordini pendenti piazzati, in attesa");
-   if(cat.state == STATE_POSITION)
-      return(cat.partialDone ? "posizione aperta (parziale gia' fatto)" : "posizione aperta");
+   if(g_event.state == STATE_POSITION)
+      return(g_event.partialDone ? "posizione aperta (parziale gia' fatto)" : "posizione aperta");
    return("concluso");
   }
 
 //+------------------------------------------------------------------+
-//| Testo del range per una categoria                                 |
+//| Testo del range                                                    |
 //+------------------------------------------------------------------+
-string CategoryRangeText(const CategoryState &cat)
+string EventRangeText()
   {
-   if(!cat.active || !cat.rangeValid)
+   if(!g_event.active || !g_event.rangeValid)
       return("");
-   return StringFormat("   Range: H=%s  L=%s", DoubleToString(cat.rangeHigh, _Digits), DoubleToString(cat.rangeLow, _Digits));
+   return StringFormat("   Range: H=%s  L=%s", DoubleToString(g_event.rangeHigh, _Digits), DoubleToString(g_event.rangeLow, _Digits));
   }
 
 //+------------------------------------------------------------------+
@@ -684,58 +645,28 @@ void UpdateTradingButton()
   }
 
 //+------------------------------------------------------------------+
-//| Aggiorna il testo del pulsante BE dopo parziale ON/OFF             |
-//+------------------------------------------------------------------+
-void UpdateBEButton()
-  {
-   string name = g_panelPrefix + "BtnBE";
-   if(ObjectFind(0, name) < 0)
-      return;
-   if(g_moveToBreakeven)
-     {
-      ObjectSetString(0, name, OBJPROP_TEXT, "BE dopo parziale: ON");
-      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrDarkGreen);
-     }
-   else
-     {
-      ObjectSetString(0, name, OBJPROP_TEXT, "BE dopo parziale: OFF");
-      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrFireBrick);
-     }
-  }
-
-//+------------------------------------------------------------------+
 //| Ricrea le scritte dinamiche del pannello (sola lettura)            |
 //+------------------------------------------------------------------+
 void UpdatePanel()
   {
-   if(!InpShowPanel)
-      return;
+   int x = PANEL_X;
+   int y = PANEL_Y;
 
-   int x = InpPanelX;
-   int y = InpPanelY;
-
-   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * g_lineH, "AQUILA - Dashboard (sola lettura)", clrWhite);
-   PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * g_lineH,
+   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * PANEL_LINE_H, "AQUILA - Dashboard", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * PANEL_LINE_H,
                  g_tradingEnabledRuntime ? "Modalita': LIVE (invia ordini reali)" : "Modalita': SIMULAZIONE",
                  g_tradingEnabledRuntime ? clrOrange : clrLightGray);
-
-   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * g_lineH, "Evento 1: " + CategoryStatusText(g_nfp), clrYellow);
-   PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * g_lineH, CategoryRangeText(g_nfp), clrWhite);
-   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * g_lineH, "Evento 2: " + CategoryStatusText(g_fomc), clrYellow);
-   PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * g_lineH, CategoryRangeText(g_fomc), clrWhite);
-
-   PanelSetLabel(g_panelPrefix + "L6", x,
-                 y + 6 * g_lineH,
+   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * PANEL_LINE_H, "Notizia: " + EventStatusText(), clrYellow);
+   PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, EventRangeText(), clrWhite);
+   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H,
                  StringFormat("Distanza: %.1fp  Lotto: %.2f  SL: %.1fp  TP: %.1fp",
                               InpPipsDistance, InpLotSize, InpStopLossPips, InpTakeProfitPips),
                  clrSilver);
-   PanelSetLabel(g_panelPrefix + "L7", x,
-                 y + 7 * g_lineH,
+   PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H,
                  StringFormat("Parziale: %.1f%% a %.1fp", InpPartialClosePercent, InpPartialTriggerPips),
                  clrSilver);
 
    UpdateTradingButton();
-   UpdateBEButton();
    ChartRedraw(0);
   }
 
@@ -744,19 +675,17 @@ void UpdatePanel()
 //+------------------------------------------------------------------+
 void CreatePanel()
   {
-   if(!InpShowPanel)
-      return;
-
-   int x = InpPanelX;
-   int y = InpPanelY;
+   int x = PANEL_X;
+   int y = PANEL_Y;
 
    string bg = g_panelPrefix + "BG";
    if(ObjectFind(0, bg) < 0)
       ObjectCreate(0, bg, OBJ_RECTANGLE_LABEL, 0, 0, 0);
    ObjectSetInteger(0, bg, OBJPROP_CORNER, CORNER_LEFT_UPPER);
-   ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, x - SC(6));
-   ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, y - SC(6));
-   ObjectSetInteger(0, bg, OBJPROP_XSIZE, SC(300));
+   ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, x - 6);
+   ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, y - 6);
+   ObjectSetInteger(0, bg, OBJPROP_XSIZE, 280);
+   ObjectSetInteger(0, bg, OBJPROP_YSIZE, 6 * PANEL_LINE_H + 44);
    ObjectSetInteger(0, bg, OBJPROP_ZORDER, 0);
    ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, C'20,20,20');
    ObjectSetInteger(0, bg, OBJPROP_BORDER_TYPE, BORDER_FLAT);
@@ -765,27 +694,16 @@ void CreatePanel()
    ObjectSetInteger(0, bg, OBJPROP_SELECTABLE, false);
    ObjectSetInteger(0, bg, OBJPROP_HIDDEN, true);
 
-   // -- Blocco stato (dinamico, gestito da UpdatePanel) --
-   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * g_lineH, "AQUILA - Dashboard (sola lettura)", clrWhite);
-   PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * g_lineH, "", clrWhite);
-   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * g_lineH, "", clrYellow);
-   PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * g_lineH, "", clrWhite);
-   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * g_lineH, "", clrYellow);
-   PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * g_lineH, "", clrWhite);
-   PanelSetLabel(g_panelPrefix + "L6", x, y + 6 * g_lineH, "", clrSilver);
-   PanelSetLabel(g_panelPrefix + "L7", x, y + 7 * g_lineH, "", clrSilver);
+   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * PANEL_LINE_H, "AQUILA - Dashboard", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * PANEL_LINE_H, "", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * PANEL_LINE_H, "", clrYellow);
+   PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, "", clrWhite);
+   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H, "", clrSilver);
+   PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H, "", clrSilver);
 
-   int by = y + 8 * g_lineH + SC(14);
-
-   PanelSetButton(g_panelPrefix + "BtnTrading", x, by, SC(140), SC(24), "", clrGray);
-   PanelSetButton(g_panelPrefix + "BtnBE", x + SC(150), by, SC(140), SC(24), "", clrGray);
-   by += SC(30);
-
-   PanelSetButton(g_panelPrefix + "BtnCancelNFP", x, by, SC(140), SC(24), "Annulla Evento 1", clrMaroon);
-   PanelSetButton(g_panelPrefix + "BtnCancelFOMC", x + SC(150), by, SC(140), SC(24), "Annulla Evento 2", clrMaroon);
-   by += SC(30);
-
-   ObjectSetInteger(0, bg, OBJPROP_YSIZE, (by - y) + SC(14));
+   int by = y + 6 * PANEL_LINE_H + 14;
+   PanelSetButton(g_panelPrefix + "BtnTrading", x, by, 130, 24, "", clrGray);
+   PanelSetButton(g_panelPrefix + "BtnCancel", x + 140, by, 130, 24, "Annulla", clrMaroon);
 
    UpdatePanel();
   }
@@ -825,19 +743,16 @@ void SetLevelLine(const string name, const double price, const color clr, const 
 
 //+------------------------------------------------------------------+
 //| Disegna sul grafico il range tracciato e i livelli di ingresso    |
-//| (anteprima tratteggiata finche' non sono piazzati davvero, poi    |
-//| continui; sostituiti dal prezzo di ingresso reale a posizione     |
-//| aperta)                                                            |
 //+------------------------------------------------------------------+
-void DrawCategoryLines(CategoryState &cat)
+void DrawEventLines()
   {
-   string prefix = g_panelPrefix + "LN_" + cat.label + "_";
+   string prefix = g_panelPrefix + "LN_";
    string nHigh = prefix + "High";
    string nLow  = prefix + "Low";
    string nBuy  = prefix + "Buy";
    string nSell = prefix + "Sell";
 
-   if(!cat.active || !cat.rangeValid || cat.state == STATE_DONE)
+   if(!g_event.active || !g_event.rangeValid || g_event.state == STATE_DONE)
      {
       ObjectDelete(0, nHigh);
       ObjectDelete(0, nLow);
@@ -846,36 +761,36 @@ void DrawCategoryLines(CategoryState &cat)
       return;
      }
 
-   SetLevelLine(nHigh, cat.rangeHigh, clrDeepSkyBlue, STYLE_DOT, cat.label + " - massimo range");
-   SetLevelLine(nLow,  cat.rangeLow,  clrDeepSkyBlue, STYLE_DOT, cat.label + " - minimo range");
+   SetLevelLine(nHigh, g_event.rangeHigh, clrDeepSkyBlue, STYLE_DOT, "Aquila - massimo range");
+   SetLevelLine(nLow,  g_event.rangeLow,  clrDeepSkyBlue, STYLE_DOT, "Aquila - minimo range");
 
-   if(cat.state == STATE_WAITING)
+   if(g_event.state == STATE_WAITING)
      {
       double pip = PipSize();
-      double buyPreview  = cat.rangeHigh + InpPipsDistance * pip;
-      double sellPreview = cat.rangeLow  - InpPipsDistance * pip;
-      SetLevelLine(nBuy,  buyPreview,  clrLime,      STYLE_DASHDOT, cat.label + " - anteprima Buy Stop");
-      SetLevelLine(nSell, sellPreview, clrOrangeRed, STYLE_DASHDOT, cat.label + " - anteprima Sell Stop");
+      double buyPreview  = g_event.rangeHigh + InpPipsDistance * pip;
+      double sellPreview = g_event.rangeLow  - InpPipsDistance * pip;
+      SetLevelLine(nBuy,  buyPreview,  clrLime,      STYLE_DASHDOT, "Aquila - anteprima Buy Stop");
+      SetLevelLine(nSell, sellPreview, clrOrangeRed, STYLE_DASHDOT, "Aquila - anteprima Sell Stop");
      }
-   else if(cat.state == STATE_ARMED)
+   else if(g_event.state == STATE_ARMED)
      {
-      SetLevelLine(nBuy,  cat.buyPricePlaced,  clrLime,      STYLE_SOLID, cat.label + " - Buy Stop piazzato");
-      SetLevelLine(nSell, cat.sellPricePlaced, clrOrangeRed, STYLE_SOLID, cat.label + " - Sell Stop piazzato");
+      SetLevelLine(nBuy,  g_event.buyPricePlaced,  clrLime,      STYLE_SOLID, "Aquila - Buy Stop piazzato");
+      SetLevelLine(nSell, g_event.sellPricePlaced, clrOrangeRed, STYLE_SOLID, "Aquila - Sell Stop piazzato");
      }
-   else if(cat.state == STATE_POSITION)
+   else if(g_event.state == STATE_POSITION)
      {
-      if(cat.positionTicket != 0 && PositionSelectByTicket(cat.positionTicket))
+      if(g_event.positionTicket != 0 && PositionSelectByTicket(g_event.positionTicket))
         {
          double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
          long   posType   = PositionGetInteger(POSITION_TYPE);
          if(posType == POSITION_TYPE_BUY)
            {
-            SetLevelLine(nBuy, openPrice, clrLime, STYLE_SOLID, cat.label + " - ingresso BUY");
+            SetLevelLine(nBuy, openPrice, clrLime, STYLE_SOLID, "Aquila - ingresso BUY");
             ObjectDelete(0, nSell);
            }
          else
            {
-            SetLevelLine(nSell, openPrice, clrOrangeRed, STYLE_SOLID, cat.label + " - ingresso SELL");
+            SetLevelLine(nSell, openPrice, clrOrangeRed, STYLE_SOLID, "Aquila - ingresso SELL");
             ObjectDelete(0, nBuy);
            }
         }
@@ -902,20 +817,10 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
       g_tradingEnabledRuntime = !g_tradingEnabledRuntime;
       ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
      }
-   else if(sparam == p + "BtnBE")
-     {
-      g_moveToBreakeven = !g_moveToBreakeven;
-      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-     }
-   else if(sparam == p + "BtnCancelNFP")
+   else if(sparam == p + "BtnCancel")
      {
       ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-      CancelCategory(g_nfp);
-     }
-   else if(sparam == p + "BtnCancelFOMC")
-     {
-      ObjectSetInteger(0, sparam, OBJPROP_STATE, false);
-      CancelCategory(g_fomc);
+      CancelEvent();
      }
    else
       return;
@@ -926,10 +831,8 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
 //+------------------------------------------------------------------+
 void OnTimer()
   {
-   ProcessCategory(g_nfp);
-   ProcessCategory(g_fomc);
-   DrawCategoryLines(g_nfp);
-   DrawCategoryLines(g_fomc);
+   ProcessEvent();
+   DrawEventLines();
    UpdatePanel();
    ChartRedraw(0);
   }
@@ -937,7 +840,6 @@ void OnTimer()
 //+------------------------------------------------------------------+
 void OnTick()
   {
-   ProcessCategory(g_nfp);
-   ProcessCategory(g_fomc);
+   ProcessEvent();
   }
 //+------------------------------------------------------------------+
