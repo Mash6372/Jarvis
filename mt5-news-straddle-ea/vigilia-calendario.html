@@ -1,0 +1,660 @@
+<title>Vigilia</title>
+<meta name="description" content="Calendario delle news ad alto impatto per Aquila (forex) e Aurum (oro): quali eventi muovono quali coppie, e le date confermate da settembre a dicembre 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f4ee;
+    --surface:#ffffff;
+    --surface-2:#efe9dd;
+    --border:#ddd3c0;
+    --text:#241f18;
+    --text-dim:#5c5346;
+    --accent:#93701f;
+    --accent-soft:#e8dcc0;
+    --accent2:#2f6f70;
+    --accent2-soft:#dbe9e8;
+    --high:#a8402f;
+    --high-soft:#f3ddd7;
+    --med:#93701f;
+    --med-soft:#efe4c4;
+    --low:#4f7a54;
+    --low-soft:#dfe9df;
+    --rule:#c9bc9c;
+    --shadow: 0 1px 2px rgba(36,31,24,.06), 0 8px 24px -12px rgba(36,31,24,.18);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14120f;
+      --surface:#1c1913;
+      --surface-2:#241f17;
+      --border:#3a3223;
+      --text:#eee7d6;
+      --text-dim:#aa9f87;
+      --accent:#d3ac52;
+      --accent-soft:#332a17;
+      --accent2:#6fb3b0;
+      --accent2-soft:#1b2c2b;
+      --high:#e07a63;
+      --high-soft:#3a201b;
+      --med:#d3ac52;
+      --med-soft:#332a17;
+      --low:#8fbf95;
+      --low-soft:#1c2a1e;
+      --rule:#4a4130;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14120f;
+    --surface:#1c1913;
+    --surface-2:#241f17;
+    --border:#3a3223;
+    --text:#eee7d6;
+    --text-dim:#aa9f87;
+    --accent:#d3ac52;
+    --accent-soft:#332a17;
+    --accent2:#6fb3b0;
+    --accent2-soft:#1b2c2b;
+    --high:#e07a63;
+    --high-soft:#3a201b;
+    --med:#d3ac52;
+    --med-soft:#332a17;
+    --low:#8fbf95;
+    --low-soft:#1c2a1e;
+    --rule:#4a4130;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Source Sans 3", -apple-system, "Segoe UI", sans-serif;
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:56px 24px 80px;}
+
+  h1,h2,h3{font-family:"Fraunces", Georgia, serif; text-wrap:balance; margin:0;}
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1px;background:var(--accent);display:inline-block;}
+
+  header.page{margin-bottom:44px;}
+  header.page h1{font-size:clamp(38px,6vw,54px); font-weight:600; margin-top:10px; letter-spacing:-.01em;}
+  header.page p.lede{
+    max-width:62ch; color:var(--text-dim); font-size:18px; margin-top:14px;
+  }
+  .bots{display:flex; gap:10px; margin-top:22px; flex-wrap:wrap;}
+  .bot-chip{
+    font-family:"IBM Plex Mono",monospace; font-size:12.5px;
+    border:1px solid var(--border); border-radius:100px;
+    padding:6px 14px; color:var(--text-dim); background:var(--surface);
+    display:flex; gap:8px; align-items:center;
+  }
+  .bot-chip b{color:var(--text); font-weight:600;}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .dot.gold{background:var(--accent);}
+  .dot.teal{background:var(--accent2);}
+
+  .callout{
+    border:1px solid var(--border);
+    border-left:3px solid var(--high);
+    background:var(--surface);
+    border-radius:6px;
+    padding:18px 20px;
+    margin:0 0 40px;
+    box-shadow:var(--shadow);
+  }
+  .callout .t{
+    font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--high); font-weight:600; margin-bottom:6px;
+  }
+  .callout p{margin:6px 0 0; color:var(--text-dim); font-size:15px;}
+  .callout p:first-of-type{margin-top:6px;}
+  .callout strong{color:var(--text);}
+
+  section{margin-top:56px;}
+  section > h2{font-size:26px; font-weight:600; margin-bottom:6px;}
+  section > .sub{color:var(--text-dim); font-size:15px; max-width:62ch; margin-bottom:24px;}
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap:18px; margin-bottom:28px;
+    font-size:13.5px; color:var(--text-dim); font-family:"IBM Plex Mono",monospace;
+  }
+  .legend span{display:flex;align-items:center;gap:7px;}
+  .impact{display:inline-flex; gap:2px;}
+  .impact i{width:6px;height:6px;border-radius:50%;background:var(--border);display:inline-block;}
+  .impact i.on.high{background:var(--high);}
+  .impact i.on.med{background:var(--med);}
+  .impact i.on.low{background:var(--low);}
+
+  .filters{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:28px;}
+  .filter-btn{
+    font-family:"IBM Plex Mono",monospace; font-size:12.5px;
+    border:1px solid var(--border); background:var(--surface); color:var(--text-dim);
+    border-radius:100px; padding:7px 14px; cursor:pointer; transition:all .15s ease;
+  }
+  .filter-btn:hover{border-color:var(--accent);}
+  .filter-btn.active{background:var(--accent); border-color:var(--accent); color:var(--bg);}
+  .filter-btn:focus-visible{outline:2px solid var(--accent2); outline-offset:2px;}
+
+  .month-block{margin-bottom:8px;}
+  .month-head{
+    display:flex; align-items:baseline; gap:14px; margin:36px 0 14px;
+  }
+  .month-head h3{font-size:18px; font-weight:500; color:var(--text); white-space:nowrap;}
+  .month-head .rule{flex:1; height:1px; background:var(--rule);}
+
+  .events{display:flex; flex-direction:column; gap:2px;}
+  .ev{
+    display:grid;
+    grid-template-columns: 84px 1fr auto;
+    gap:4px 18px;
+    padding:14px 16px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:8px;
+    align-items:start;
+    transition:opacity .15s ease;
+  }
+  .ev + .ev{margin-top:6px;}
+  .ev.hide{display:none;}
+  .ev .date{
+    font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--text-dim);
+    padding-top:2px;
+  }
+  .ev .date b{display:block; font-size:20px; color:var(--text); font-weight:600; line-height:1.1;}
+  .ev .main .name{font-size:16px; font-weight:600;}
+  .ev .main .meta{
+    font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--text-dim); margin-top:4px;
+    display:flex; flex-wrap:wrap; gap:4px 14px;
+  }
+  .ev .main .note{font-size:13.5px; color:var(--high); margin-top:6px;}
+  .ev .main .note.warn::before{content:"⚠ ";}
+  .tags{display:flex; flex-direction:column; align-items:flex-end; gap:8px;}
+  .tag{
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.04em;
+    padding:3px 9px; border-radius:100px; white-space:nowrap;
+  }
+  .tag.usd{background:var(--accent2-soft); color:var(--accent2);}
+  .tag.eur{background:var(--accent-soft); color:var(--accent);}
+  .tag.gbp{background:var(--low-soft); color:var(--low);}
+  .tag.eur-gbp{background:var(--accent-soft); color:var(--accent);}
+  .gold-tag{display:flex; align-items:center; gap:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--text-dim);}
+
+  table.ref{
+    width:100%; border-collapse:collapse; font-size:14.5px;
+    background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden;
+  }
+  .table-wrap{overflow-x:auto; border-radius:8px;}
+  table.ref th, table.ref td{
+    text-align:left; padding:11px 14px; border-bottom:1px solid var(--border);
+    vertical-align:top;
+  }
+  table.ref th{
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.06em;
+    text-transform:uppercase; color:var(--text-dim); background:var(--surface-2); font-weight:600;
+  }
+  table.ref tr:last-child td{border-bottom:none;}
+  table.ref td.num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;}
+  table.ref td.evname{font-weight:600;}
+
+  .howto{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;
+  }
+  .howto .step{
+    background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:18px;
+  }
+  .howto .step .n{
+    font-family:"IBM Plex Mono",monospace; color:var(--accent); font-size:13px; margin-bottom:8px;
+  }
+  .howto .step p{margin:0; font-size:14.5px; color:var(--text-dim);}
+  .howto .step code{
+    font-family:"IBM Plex Mono",monospace; background:var(--surface-2); padding:1px 6px; border-radius:4px; color:var(--text);
+  }
+
+  footer{
+    margin-top:64px; padding-top:24px; border-top:1px solid var(--border);
+    font-size:12.5px; color:var(--text-dim);
+  }
+  footer a{color:var(--accent2);}
+  footer .sources{margin-top:10px; display:flex; flex-wrap:wrap; gap:4px 14px;}
+
+  @media (max-width:600px){
+    .ev{grid-template-columns:64px 1fr; }
+    .tags{grid-column:1/-1; flex-direction:row; align-items:center;}
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="page">
+    <div class="eyebrow">Aquila · Aurum — calendario notizie</div>
+    <h1>Vigilia</h1>
+    <p class="lede">Gli eventi che muovono davvero il mercato in modo repentino, con le date confermate per i prossimi mesi — cosa impostare in <code>InpNewsTime</code> e su quale grafico attaccare i due bot.</p>
+    <div class="bots">
+      <span class="bot-chip"><span class="dot teal"></span><b>Aquila</b> — forex, distanze in pips</span>
+      <span class="bot-chip"><span class="dot gold"></span><b>Aurum</b> — oro, distanze in $ equivalenti</span>
+    </div>
+  </header>
+
+  <div class="callout">
+    <div class="t">Prima di fidarti di una data</div>
+    <p>Il calendario USA 2026 ha subito diversi <strong>rinvii</strong> per lo shutdown di governo: a gennaio l'NFP è slittato dall'8:30 ora abituale a un'uscita l'11 febbraio, ad aprile il dato è arrivato il secondo venerdì invece del primo, e a giugno è uscito di giovedì anziché di venerdì. Le riunioni di BCE, BOE e Fed (FOMC) sono invece calendarizzate con largo anticipo e cambiano di rado.</p>
+    <p><strong>Regola pratica:</strong> per FOMC / BCE / BOE puoi fidarti delle date qui sotto. Per NFP e CPI, ricontrolla su <a href="#" style="color:inherit;text-decoration:underline;" onclick="return false;">Forex Factory</a> o Investing.com nei giorni immediatamente precedenti, prima di scrivere l'orario in <code>InpNewsTime</code>.</p>
+  </div>
+
+  <section id="calendario">
+    <h2>Calendario, settembre–dicembre 2026</h2>
+    <p class="sub">Orari già convertiti in ora italiana. Fonti: Federal Reserve, BCE, Bank of England, Bureau of Labor Statistics (vedi note e link in fondo pagina).</p>
+
+    <div class="legend">
+      <span><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span> Alto impatto sull'oro</span>
+      <span><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span> Impatto medio</span>
+      <span><span class="impact"><i class="on low"></i><i></i><i></i></span> Impatto basso/indiretto</span>
+    </div>
+
+    <div class="filters" role="group" aria-label="Filtra per valuta">
+      <button class="filter-btn active" data-filter="all">Tutti</button>
+      <button class="filter-btn" data-filter="usd">USD</button>
+      <button class="filter-btn" data-filter="eur">EUR</button>
+      <button class="filter-btn" data-filter="gbp">GBP</button>
+    </div>
+
+    <div class="month-block">
+      <div class="month-head"><h3>Settembre 2026</h3><div class="rule"></div></div>
+      <div class="events">
+
+        <div class="ev" data-cur="eur">
+          <div class="date"><b>10</b>gio</div>
+          <div class="main">
+            <div class="name">Decisione tassi BCE + conferenza Lagarde</div>
+            <div class="meta"><span>14:15 IT decisione</span><span>14:45 IT conferenza</span><span>Aquila → EURUSD</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag eur">EUR</span>
+            <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>indiretto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd">
+          <div class="date"><b>11</b>ven</div>
+          <div class="main">
+            <div class="name">CPI USA (dato agosto)</div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span><span>Aurum + Aquila su USD</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd">
+          <div class="date"><b>15–16</b>mar–mer</div>
+          <div class="main">
+            <div class="name">Riunione FOMC — decisione 16 settembre</div>
+            <div class="meta"><span>14:00 ET → 20:00 IT decisione</span><span>14:30 ET → 20:30 IT conferenza Powell</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="gbp">
+          <div class="date"><b>17</b>gio</div>
+          <div class="main">
+            <div class="name">Decisione tassi BOE (MPC)</div>
+            <div class="meta"><span>12:00 UK → 13:00 IT</span><span>Aquila → GBPUSD</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag gbp">GBP</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>basso</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="month-block">
+      <div class="month-head"><h3>Ottobre 2026</h3><div class="rule"></div></div>
+      <div class="events">
+
+        <div class="ev" data-cur="usd">
+          <div class="date"><b>2</b>ven</div>
+          <div class="main">
+            <div class="name">NFP — Non-Farm Payrolls (dato settembre)</div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span><span>Aurum + Aquila su USD</span></div>
+            <div class="note warn">Data annunciata ma calendario 2026 instabile: verifica su Forex Factory il giorno prima</div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd">
+          <div class="date"><b>14</b>mer</div>
+          <div class="main">
+            <div class="name">CPI USA (dato settembre)</div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd">
+          <div class="date"><b>27–28</b>mar–mer</div>
+          <div class="main">
+            <div class="name">Riunione FOMC — decisione 28 ottobre</div>
+            <div class="meta"><span>14:00 ET → <strong>19:00 IT</strong> decisione</span><span>14:30 ET → 19:30 IT conferenza</span></div>
+            <div class="note warn">Non è 20:00! Il 25 ottobre l'Italia torna all'ora solare ma gli USA restano in ora legale fino al 1° novembre: per questa settimana la differenza scende a 5 ore invece di 6.</div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="eur">
+          <div class="date"><b>29</b>gio</div>
+          <div class="main">
+            <div class="name">Decisione tassi BCE + conferenza Lagarde</div>
+            <div class="meta"><span>14:15 IT decisione</span><span>14:45 IT conferenza</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag eur">EUR</span>
+            <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>indiretto</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="month-block">
+      <div class="month-head"><h3>Novembre 2026</h3><div class="rule"></div></div>
+      <div class="events">
+
+        <div class="ev" data-cur="gbp">
+          <div class="date"><b>5</b>gio</div>
+          <div class="main">
+            <div class="name">Decisione tassi BOE + Monetary Policy Report</div>
+            <div class="meta"><span>12:00 UK → 13:00 IT</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag gbp">GBP</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>basso</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd">
+          <div class="date"><b>10</b>mar</div>
+          <div class="main">
+            <div class="name">CPI USA (dato ottobre)</div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd">
+          <div class="date"><b>?</b>ven</div>
+          <div class="main">
+            <div class="name">NFP — dato non confermato per novembre</div>
+            <div class="meta"><span>tipicamente 8:30 ET → 14:30 IT</span></div>
+            <div class="note warn">Nessuna fonte ufficiale trovata per un'uscita a inizio novembre: il dato di ottobre risulta spostato al 4 dicembre. Controlla il calendario economico prima di impostare Aurum/Aquila su questo evento.</div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="month-block">
+      <div class="month-head"><h3>Dicembre 2026</h3><div class="rule"></div></div>
+      <div class="events">
+
+        <div class="ev" data-cur="usd">
+          <div class="date"><b>4</b>ven</div>
+          <div class="main">
+            <div class="name">NFP — Non-Farm Payrolls (dato ottobre)</div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span><span>Aurum + Aquila su USD</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd">
+          <div class="date"><b>8–9</b>mar–mer</div>
+          <div class="main">
+            <div class="name">Riunione FOMC — decisione 9 dicembre</div>
+            <div class="meta"><span>14:00 ET → 20:00 IT decisione</span><span>14:30 ET → 20:30 IT conferenza</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd">
+          <div class="date"><b>10</b>gio</div>
+          <div class="main">
+            <div class="name">CPI USA (dato novembre)</div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="eur gbp">
+          <div class="date"><b>17</b>gio</div>
+          <div class="main">
+            <div class="name">Decisione BCE <em>e</em> decisione BOE — stesso giorno</div>
+            <div class="meta"><span>BCE 14:15 / 14:45 IT</span><span>BOE 12:00 UK → 13:00 IT</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag eur-gbp">EUR + GBP</span>
+            <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>indiretto</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="guida">
+    <h2>Guida agli eventi: cosa muove cosa</h2>
+    <p class="sub">Non solo le date sopra: questi sono i tipi di notizia da tenere d'occhio ogni mese, in ordine di violenza del movimento sull'oro.</p>
+
+    <div class="table-wrap">
+      <table class="ref">
+        <thead>
+          <tr>
+            <th>Evento</th>
+            <th>Valuta</th>
+            <th>Frequenza</th>
+            <th>Orario tipico</th>
+            <th>Coppie coinvolte</th>
+            <th>Impatto sull'oro</th>
+            <th>Adatto ai bot?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="evname">FOMC — decisione tassi Fed</td>
+            <td>USD</td>
+            <td class="num">8×/anno</td>
+            <td class="num">20:00 IT*</td>
+            <td>Tutte le major USD, XAUUSD</td>
+            <td><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span></td>
+            <td>Sì, il migliore</td>
+          </tr>
+          <tr>
+            <td class="evname">CPI USA</td>
+            <td>USD</td>
+            <td class="num">mensile</td>
+            <td class="num">14:30 IT*</td>
+            <td>Tutte le major USD, XAUUSD</td>
+            <td><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span></td>
+            <td>Sì, il migliore</td>
+          </tr>
+          <tr>
+            <td class="evname">NFP — Non-Farm Payrolls</td>
+            <td>USD</td>
+            <td class="num">mensile</td>
+            <td class="num">14:30 IT*</td>
+            <td>Tutte le major USD, XAUUSD</td>
+            <td><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span></td>
+            <td>Sì, storico</td>
+          </tr>
+          <tr>
+            <td class="evname">Core PCE</td>
+            <td>USD</td>
+            <td class="num">mensile</td>
+            <td class="num">14:30 IT*</td>
+            <td>Tutte le major USD, XAUUSD</td>
+            <td><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span></td>
+            <td>Sì</td>
+          </tr>
+          <tr>
+            <td class="evname">ISM Manufacturing / Services PMI</td>
+            <td>USD</td>
+            <td class="num">mensile</td>
+            <td class="num">16:00 IT*</td>
+            <td>EURUSD, GBPUSD, XAUUSD</td>
+            <td><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span></td>
+            <td>Sì</td>
+          </tr>
+          <tr>
+            <td class="evname">Retail Sales / GDP USA</td>
+            <td>USD</td>
+            <td class="num">mensile / trim.</td>
+            <td class="num">14:30 IT*</td>
+            <td>Major USD, XAUUSD</td>
+            <td><span class="impact"><i class="on med"></i><i></i><i></i></span></td>
+            <td>Sì</td>
+          </tr>
+          <tr>
+            <td class="evname">ADP Employment</td>
+            <td>USD</td>
+            <td class="num">mensile</td>
+            <td class="num">14:15 IT*</td>
+            <td>Major USD, XAUUSD (reazione minore)</td>
+            <td><span class="impact"><i class="on med"></i><i></i><i></i></span></td>
+            <td>Sì, ma reazione più debole</td>
+          </tr>
+          <tr>
+            <td class="evname">BCE — decisione tassi</td>
+            <td>EUR</td>
+            <td class="num">8×/anno</td>
+            <td class="num">14:15 IT</td>
+            <td>EURUSD, EURGBP, EURJPY</td>
+            <td><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span></td>
+            <td>Sì, su EURUSD</td>
+          </tr>
+          <tr>
+            <td class="evname">BOE — decisione tassi (MPC)</td>
+            <td>GBP</td>
+            <td class="num">8×/anno</td>
+            <td class="num">13:00 IT</td>
+            <td>GBPUSD, EURGBP, GBPJPY</td>
+            <td><span class="impact"><i class="on low"></i><i></i><i></i></span></td>
+            <td>Sì, su GBPUSD</td>
+          </tr>
+          <tr>
+            <td class="evname">BOJ — decisione tassi</td>
+            <td>JPY</td>
+            <td class="num">8×/anno</td>
+            <td class="num">variabile*</td>
+            <td>USDJPY, EURJPY</td>
+            <td><span class="impact"><i class="on low"></i><i></i><i></i></span></td>
+            <td>No — orario non fisso</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sub" style="margin-top:14px;">* Orario indicativo in ora italiana durante il periodo CEST/EDT (giugno–ottobre); verifica sempre la conversione esatta nel calendario economico, specialmente nelle settimane di cambio ora legale (fine marzo e fine ottobre). Il BOJ non pubblica un orario fisso di rilascio, quindi non è adatto alla logica "3 secondi prima" dei bot.</p>
+  </section>
+
+  <section id="uso">
+    <h2>Come usarlo con Aquila e Aurum</h2>
+    <div class="howto">
+      <div class="step">
+        <div class="n">01 — Scegli l'evento</div>
+        <p>Guarda il calendario sopra (o Forex Factory il giorno prima) e prendi l'orario <strong>già convertito in ora italiana</strong>.</p>
+      </div>
+      <div class="step">
+        <div class="n">02 — Scegli il bot</div>
+        <p>Notizie che muovono l'oro (FOMC, CPI, NFP, PCE) → attacca <code>Aurum</code> al grafico XAUUSD. Notizie forex pure (BCE, BOE) → attacca <code>Aquila</code> alla coppia giusta (EURUSD, GBPUSD…).</p>
+      </div>
+      <div class="step">
+        <div class="n">03 — Imposta l'orario</div>
+        <p>Apri le proprietà dell'EA, scrivi l'orario in <code>InpNewsTime</code> (formato <code>HH:MM</code>), premi OK.</p>
+      </div>
+      <div class="step">
+        <div class="n">04 — Verifica sul pannello</div>
+        <p>Controlla il countdown nella dashboard sul grafico: se il numero non torna, l'orario inserito è sbagliato — ricontrollalo prima che scatti.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>Pagina di riferimento generata il 4 settembre 2026. Le date FOMC/BCE/BOE derivano dai calendari ufficiali delle rispettive banche centrali; le date NFP/CPI da fonti secondarie e sono più soggette a rinvio — <strong>verifica sempre prima di operare</strong>. Nessuna delle informazioni qui contenute è un consiglio di investimento.</div>
+    <div class="sources">
+      <span>Fonti:</span>
+      <a href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" target="_blank" rel="noopener">Federal Reserve — calendario FOMC</a>
+      <a href="https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html" target="_blank" rel="noopener">BCE — calendario Governing Council</a>
+      <a href="https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates" target="_blank" rel="noopener">Bank of England — date MPC</a>
+      <a href="https://www.bls.gov/schedule/news_release/empsit.htm" target="_blank" rel="noopener">BLS — Employment Situation</a>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  (function(){
+    var buttons = document.querySelectorAll('.filter-btn');
+    var events = document.querySelectorAll('.ev');
+    buttons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        buttons.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        var f = btn.getAttribute('data-filter');
+        events.forEach(function(ev){
+          if(f === 'all' || (ev.getAttribute('data-cur')||'').indexOf(f) !== -1){
+            ev.classList.remove('hide');
+          } else {
+            ev.classList.add('hide');
+          }
+        });
+      });
+    });
+  })();
+</script>
