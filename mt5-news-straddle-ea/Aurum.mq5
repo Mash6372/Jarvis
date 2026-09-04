@@ -3,16 +3,21 @@
 //|  AURUM - "oro" in latino. Versione dedicata all'ORO (XAUUSD),     |
 //|  sorella di Aquila (per forex).                                   |
 //|                                                                    |
-//|  DIFFERENZA IMPORTANTE rispetto ad Aquila: qui la distanza tra    |
-//|  massimo/minimo e prezzo di entrata, lo Stop Loss, il Take        |
-//|  Profit e il trigger di chiusura parziale si esprimono in         |
-//|  DOLLARI (prezzo diretto), NON in "pips". Sull'oro il concetto    |
-//|  di pip dei cambi forex non si applica in modo affidabile: a      |
-//|  seconda del broker XAUUSD puo' avere 2 o 3 decimali, e la        |
-//|  stessa formula usata per il forex puo' calcolare una distanza    |
-//|  reale di pochi centesimi di dollaro invece che dollari interi -  |
-//|  esattamente quello che ha causato ordini piazzati quasi sul      |
-//|  massimo/minimo esatto ed eseguiti subito col rumore di prezzo.   |
+//|  DIFFERENZA IMPORTANTE rispetto ad Aquila: sull'oro il concetto   |
+//|  di "pip" del forex non si applica in modo affidabile (a seconda  |
+//|  del broker XAUUSD puo' avere 2 o 3 decimali, e la stessa formula |
+//|  usata per il forex puo' calcolare una distanza reale di pochi    |
+//|  centesimi invece che dollari interi - esattamente quello che ha  |
+//|  causato ordini piazzati quasi sul massimo/minimo esatto, eseguiti|
+//|  subito col rumore di prezzo). Per questo qui la distanza tra     |
+//|  massimo/minimo e prezzo di entrata NON e' un numero fisso in     |
+//|  dollari, ma l'EQUIVALENTE IN TEMPO REALE di N pips di EURUSD:    |
+//|  legge il prezzo attuale di EURUSD e dell'oro, calcola che        |
+//|  percentuale di movimento rappresentano quei pips su EURUSD, e    |
+//|  applica la stessa percentuale al prezzo dell'oro (vedi           |
+//|  GetEquivalentGoldDistance()). Stop Loss, Take Profit e trigger   |
+//|  di chiusura parziale restano invece in dollari diretti, perche'  |
+//|  su quelli il money management si ragiona in dollari di rischio.  |
 //|                                                                    |
 //|  Strategia "straddle sulle news": il giorno in cui esce una       |
 //|  notizia ad alto impatto (NFP, FOMC, o qualsiasi altra), apri le  |
@@ -21,9 +26,7 @@
 //|   1) osserva le candele M5 nei 10 minuti precedenti l'orario,     |
 //|      aggiornando in tempo reale massimo e minimo;                 |
 //|   2) 3 secondi prima dell'orario congela il range e piazza due    |
-//|      ordini pendenti in OCO:                                      |
-//|        - Buy Stop = massimo range + InpDistanceUSD dollari        |
-//|        - Sell Stop = minimo range - InpDistanceUSD dollari        |
+//|      ordini pendenti in OCO, alla distanza calcolata come sopra;  |
 //|   3) quando uno dei due scatta, cancella l'altro;                 |
 //|   4) se nessuno dei due scatta entro 15 minuti, li cancella       |
 //|      entrambi;                                                    |
@@ -56,8 +59,11 @@ input string InpNewsTime             = "14:30"; // Orario italiano di uscita (HH
 input group "=== Fuso orario (imposta una volta sola) ==="
 input int    InpServerMinusItalyMin  = 60;   // Differenza in MINUTI tra orario server del broker e orario italiano
 
-input group "=== Ordini (distanze in DOLLARI, non pips) ==="
-input double InpDistanceUSD          = 1.00; // Distanza in $ tra massimo/minimo e prezzo di entrata (es. 1.00 = un dollaro)
+input group "=== Distanza ordini (equivalente a pips di EURUSD) ==="
+input double InpDistanceEurUsdPips   = 3.0;  // Distanza equivalente a N pips su EURUSD, ricalcolata in $ sull'oro in base ai prezzi attuali
+input string InpEurUsdSymbol         = "EURUSD"; // Nome esatto del simbolo EURUSD su questo broker (controlla in Market Watch se diverso)
+
+input group "=== Ordini (Stop Loss / Take Profit / parziale in DOLLARI) ==="
 input double InpLotSize              = 0.10; // Lotti per ogni ordine
 input double InpStopLossUSD          = 5.00; // Stop Loss in $ (0 = nessuno)
 input double InpTakeProfitUSD        = 0.0;  // Take Profit finale in $ (0 = nessuno)
@@ -202,6 +208,9 @@ int OnInit()
    g_tradingEnabledRuntime = InpEnableTrading;
    g_moveToBreakeven       = true;
 
+   // serve avere EURUSD nel Market Watch per poterne leggere il prezzo live
+   SymbolSelect(InpEurUsdSymbol, true);
+
    ResetEvent();
    ArmEvent(InpNewsTime);
 
@@ -231,6 +240,45 @@ double NormalizeVolume(double volume)
    volume = MathRound(volume / stepVol) * stepVol;
    volume = MathMax(minVol, MathMin(maxVol, volume));
    return(volume);
+  }
+
+//+------------------------------------------------------------------+
+//| Dimensione di un pip su EURUSD (0.0001, sia a 4 che a 5 decimali) |
+//+------------------------------------------------------------------+
+double GetEurUsdPipSize()
+  {
+   double point  = SymbolInfoDouble(InpEurUsdSymbol, SYMBOL_POINT);
+   int    digits = (int)SymbolInfoInteger(InpEurUsdSymbol, SYMBOL_DIGITS);
+   if(point <= 0)
+      return(0.0001); // simbolo non disponibile: valore standard di fallback
+   if(digits == 5)
+      return(point * 10.0);
+   return(point);
+  }
+
+//+------------------------------------------------------------------+
+//| Calcola, in tempo reale, la distanza in dollari sull'oro che      |
+//| corrisponde a InpDistanceEurUsdPips pips di EURUSD: stessa        |
+//| percentuale di movimento del prezzo, applicata al prezzo attuale  |
+//| dell'oro. Es.: 3 pips EURUSD a 1.0800 = 0.0278% del prezzo; sul   |
+//| oro a 2650 diventano circa 2650 * 0.0278% = 0.74$.                |
+//+------------------------------------------------------------------+
+double GetEquivalentGoldDistance()
+  {
+   double eurUsdPrice = SymbolInfoDouble(InpEurUsdSymbol, SYMBOL_BID);
+   if(eurUsdPrice <= 0)
+      eurUsdPrice = SymbolInfoDouble(InpEurUsdSymbol, SYMBOL_ASK);
+   if(eurUsdPrice <= 0)
+      eurUsdPrice = 1.08; // fallback prudente se il simbolo EURUSD non e' disponibile sul broker
+
+   double eurUsdDistance = InpDistanceEurUsdPips * GetEurUsdPipSize();
+   double percentMove    = eurUsdDistance / eurUsdPrice;
+
+   double goldPrice = SymbolInfoDouble(_Symbol, SYMBOL_BID);
+   if(goldPrice <= 0)
+      goldPrice = SymbolInfoDouble(_Symbol, SYMBOL_ASK);
+
+   return(percentMove * goldPrice);
   }
 
 //+------------------------------------------------------------------+
@@ -297,9 +345,10 @@ void PlaceOrders()
 
    double point  = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
    int    digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+   double dist   = GetEquivalentGoldDistance();
 
-   double buyPrice  = NormalizeDouble(g_event.rangeHigh + InpDistanceUSD, digits);
-   double sellPrice = NormalizeDouble(g_event.rangeLow  - InpDistanceUSD, digits);
+   double buyPrice  = NormalizeDouble(g_event.rangeHigh + dist, digits);
+   double sellPrice = NormalizeDouble(g_event.rangeLow  - dist, digits);
 
    long stopLevelPts = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL);
    double stopLevel  = stopLevelPts * point;
@@ -329,7 +378,8 @@ void PlaceOrders()
    double volume = NormalizeVolume(InpLotSize);
    datetime expiration = g_event.time + EXPIRATION_MINUTES * 60;
 
-   PrintFormat("Aurum: range [%s , %s], BuyStop=%s SellStop=%s",
+   PrintFormat("Aurum: distanza equivalente a %.1f pip EURUSD -> %.2f$ sull'oro. Range [%s , %s], BuyStop=%s SellStop=%s",
+               InpDistanceEurUsdPips, dist,
                DoubleToString(g_event.rangeLow, digits), DoubleToString(g_event.rangeHigh, digits),
                DoubleToString(buyPrice, digits), DoubleToString(sellPrice, digits));
 
@@ -661,8 +711,8 @@ void UpdatePanel()
    PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * PANEL_LINE_H, "Notizia: " + EventStatusText(), clrYellow);
    PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, EventRangeText(), clrWhite);
    PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H,
-                 StringFormat("Distanza: %.2f$  Lotto: %.2f  SL: %.2f$  TP: %.2f$",
-                              InpDistanceUSD, InpLotSize, InpStopLossUSD, InpTakeProfitUSD),
+                 StringFormat("Distanza: %.2f$ (=%.1fp EURUSD)  Lotto: %.2f  SL: %.2f$  TP: %.2f$",
+                              GetEquivalentGoldDistance(), InpDistanceEurUsdPips, InpLotSize, InpStopLossUSD, InpTakeProfitUSD),
                  clrSilver);
    PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H,
                  StringFormat("Parziale: %.1f%% a %.2f$", InpPartialClosePercent, InpPartialTriggerUSD),
@@ -768,8 +818,9 @@ void DrawEventLines()
 
    if(g_event.state == STATE_WAITING)
      {
-      double buyPreview  = g_event.rangeHigh + InpDistanceUSD;
-      double sellPreview = g_event.rangeLow  - InpDistanceUSD;
+      double dist = GetEquivalentGoldDistance();
+      double buyPreview  = g_event.rangeHigh + dist;
+      double sellPreview = g_event.rangeLow  - dist;
       SetLevelLine(nBuy,  buyPreview,  clrLime,      STYLE_DASHDOT, "Aurum - anteprima Buy Stop");
       SetLevelLine(nSell, sellPreview, clrOrangeRed, STYLE_DASHDOT, "Aurum - anteprima Sell Stop");
      }

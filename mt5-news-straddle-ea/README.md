@@ -161,30 +161,43 @@ management.
 | `InpPartialTriggerPips` | Pips di profitto per far scattare la chiusura parziale. |
 | `InpEnableTrading` | Stato iniziale del pulsante Trading ON/OFF. |
 
-## Tabella degli input — Aurum (oro, distanze in DOLLARI)
+## Tabella degli input — Aurum (oro)
 
-Stessa logica, stesso pannello — cambia solo l'unità di misura delle
-distanze, che qui sono **dollari diretti sul prezzo dell'oro**, non pips.
-I valori di default (`InpDistanceUSD = 1.00`, `InpStopLossUSD = 5.00`)
-sono deliberatamente più larghi di quanto sembrerebbe naturale pensando in
-pips forex: l'oro si muove tipicamente di diversi dollari durante le news
-ad alto impatto, quindi una distanza di pochi centesimi (l'errore che ha
-causato il problema iniziale) lascia gli ordini praticamente sul prezzo,
-pronti a scattare con qualsiasi rumore. Parti da questi default e aggiustali
-guardando quanto si muove tipicamente l'oro sul tuo broker nei minuti
-attorno alle news che segui, prima di aumentare il lotto.
+Stessa logica, stesso pannello. Cambia il modo in cui si esprime la
+**distanza tra massimo/minimo e prezzo di entrata**: invece di un numero
+fisso, è l'**equivalente in tempo reale di N pips di EURUSD**, ricalcolato
+ogni volta sul prezzo attuale dell'oro. L'EA legge il prezzo di EURUSD e
+dell'oro, calcola che percentuale di movimento rappresentano quei pips su
+EURUSD (es. 3 pips a EURUSD=1.0800 sono lo 0.0278% del prezzo), e applica
+la stessa percentuale al prezzo dell'oro (a XAUUSD=2650 diventano circa
+2650 × 0.0278% ≈ 0.74$). Così la distanza si adatta da sola sia al livello
+di prezzo dell'oro sia a quello di EURUSD, invece di restare un numero
+fisso che andrebbe ricalcolato a mano ogni volta che i prezzi cambiano.
+Stop Loss, Take Profit e trigger di chiusura parziale restano invece in
+**dollari diretti**, perché sul rischio in denaro ha senso ragionare in
+dollari, non in "pips equivalenti".
+
+Il pannello mostra sempre, in tempo reale, sia i pips impostati sia il
+loro equivalente attuale in dollari (riga "Distanza").
 
 | Input | Descrizione |
 |---|---|
 | `InpNewsTime` | Come sopra. |
 | `InpServerMinusItalyMin` | Come sopra. |
-| `InpDistanceUSD` | Distanza in **dollari** tra massimo/minimo e prezzo di entrata (default 1.00). |
+| `InpDistanceEurUsdPips` | Distanza espressa come pips di EURUSD (default 3.0), ricalcolata in dollari sull'oro in tempo reale. |
+| `InpEurUsdSymbol` | Nome esatto del simbolo EURUSD sul tuo broker (default `"EURUSD"` — cambialo se nel tuo Market Watch si chiama diversamente, es. `EURUSD.a`). |
 | `InpLotSize` | Lotti per ogni ordine. |
 | `InpStopLossUSD` | Stop Loss in **dollari** (0 = nessuno, default 5.00). |
 | `InpTakeProfitUSD` | Take Profit finale in **dollari** (0 = nessuno). |
 | `InpPartialClosePercent` | % di posizione da chiudere al target parziale (0 = disabilitata). |
 | `InpPartialTriggerUSD` | **Dollari** di profitto per far scattare la chiusura parziale (default 3.00). |
 | `InpEnableTrading` | Stato iniziale del pulsante Trading ON/OFF. |
+
+> Nota: se il tuo broker non ha EURUSD nel Market Watch con quel nome
+> esatto, l'EA non riesce a leggerne il prezzo e usa un valore di
+> fallback fisso (1.0800) — controlla nel log della scheda "Esperti" che
+> la distanza calcolata sia sensata (qualche decimo/un dollaro, non
+> pochi centesimi) prima di fidarti.
 
 Tutto il resto (finestra di osservazione, secondi di anticipo, scadenza
 ordini, slippage, magic number) è fissato a valori sensati e non compare
