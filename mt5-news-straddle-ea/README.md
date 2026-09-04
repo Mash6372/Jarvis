@@ -1,13 +1,40 @@
-# Aquila — Bot MT5 per news ad alto impatto (NFP, FOMC, ecc.)
+# Bot MT5 per news ad alto impatto (NFP, FOMC, ecc.)
 
-Expert Advisor per MetaTrader 5 che automatizza la strategia "straddle sulle
-news": il giorno in cui esce una notizia ad alto impatto, osserva le ultime
-candele a 5 minuti prima dell'orario di uscita, calcola massimo e minimo del
-range e, 3 secondi prima, piazza due ordini pendenti (Buy Stop sopra il
-massimo, Sell Stop sotto il minimo). Quando uno dei due scatta, l'altro
-viene cancellato automaticamente (logica OCO). Include anche la chiusura
-parziale automatica a un target di pips, con spostamento opzionale dello
-Stop Loss a pareggio sul resto della posizione.
+Due Expert Advisor gemelli per MetaTrader 5, stessa strategia "straddle
+sulle news", ognuno pensato per il tipo di strumento giusto:
+
+- **`Aquila.mq5`** — per le coppie forex (EURUSD, GBPUSD, ecc.). Le distanze
+  (tra massimo/minimo e prezzo di entrata, Stop Loss, Take Profit, trigger
+  di chiusura parziale) si esprimono in **pips**.
+- **`Aurum.mq5`** — dedicato all'**oro (XAUUSD/GOLD)**. Le stesse distanze
+  si esprimono in **dollari diretti sul prezzo**, non in pips.
+
+> ⚠️ **Perché due file separati e non uno solo con un interruttore
+> forex/oro?** Perché il concetto di "pip" del forex non si applica in modo
+> affidabile all'oro: a seconda del broker XAUUSD può avere 2 o 3 decimali,
+> e la stessa formula usata per convertire pips in prezzo può calcolare una
+> distanza reale di pochi **centesimi** di dollaro invece che dollari
+> interi. È esattamente quello che è successo usando Aquila sull'oro: gli
+> ordini finivano piazzati a pochi centesimi dal massimo/minimo, quindi
+> scattavano quasi subito col semplice rumore di prezzo. Aurum evita il
+> problema alla radice usando dollari diretti, senza nessuna conversione
+> ambigua. **Usa sempre Aquila sul forex e Aurum sull'oro — mai il
+> contrario.**
+
+Entrambi funzionano allo stesso identico modo (stesso pannello, stessa
+logica OCO, stessa chiusura parziale) — cambiano solo le unità di misura
+delle distanze. Le istruzioni sotto usano Aquila come esempio, ma valgono
+identiche per Aurum (vedi la tabella input dedicata più in basso per le
+differenze).
+
+Expert Advisor che automatizza la strategia "straddle sulle news": il
+giorno in cui esce una notizia ad alto impatto, osserva le ultime candele a
+5 minuti prima dell'orario di uscita, calcola massimo e minimo del range e,
+3 secondi prima, piazza due ordini pendenti (Buy Stop sopra il massimo,
+Sell Stop sotto il minimo). Quando uno dei due scatta, l'altro viene
+cancellato automaticamente (logica OCO). Include anche la chiusura parziale
+automatica a un target, con spostamento opzionale dello Stop Loss a
+pareggio sul resto della posizione.
 
 **Semplicissimo: un solo campo da cambiare ogni volta.** Il giorno in cui
 devi usarlo, apri le proprietà dell'EA, scrivi l'orario italiano di uscita
@@ -120,7 +147,7 @@ management.
 > settimane ricontrolla l'orario esatto su un calendario economico (es.
 > Forex Factory) prima di scriverlo in `InpNewsTime`.
 
-## Tabella degli input (tutte le impostazioni si fanno qui)
+## Tabella degli input — Aquila (forex, distanze in pips)
 
 | Input | Descrizione |
 |---|---|
@@ -134,9 +161,34 @@ management.
 | `InpPartialTriggerPips` | Pips di profitto per far scattare la chiusura parziale. |
 | `InpEnableTrading` | Stato iniziale del pulsante Trading ON/OFF. |
 
+## Tabella degli input — Aurum (oro, distanze in DOLLARI)
+
+Stessa logica, stesso pannello — cambia solo l'unità di misura delle
+distanze, che qui sono **dollari diretti sul prezzo dell'oro**, non pips.
+I valori di default (`InpDistanceUSD = 1.00`, `InpStopLossUSD = 5.00`)
+sono deliberatamente più larghi di quanto sembrerebbe naturale pensando in
+pips forex: l'oro si muove tipicamente di diversi dollari durante le news
+ad alto impatto, quindi una distanza di pochi centesimi (l'errore che ha
+causato il problema iniziale) lascia gli ordini praticamente sul prezzo,
+pronti a scattare con qualsiasi rumore. Parti da questi default e aggiustali
+guardando quanto si muove tipicamente l'oro sul tuo broker nei minuti
+attorno alle news che segui, prima di aumentare il lotto.
+
+| Input | Descrizione |
+|---|---|
+| `InpNewsTime` | Come sopra. |
+| `InpServerMinusItalyMin` | Come sopra. |
+| `InpDistanceUSD` | Distanza in **dollari** tra massimo/minimo e prezzo di entrata (default 1.00). |
+| `InpLotSize` | Lotti per ogni ordine. |
+| `InpStopLossUSD` | Stop Loss in **dollari** (0 = nessuno, default 5.00). |
+| `InpTakeProfitUSD` | Take Profit finale in **dollari** (0 = nessuno). |
+| `InpPartialClosePercent` | % di posizione da chiudere al target parziale (0 = disabilitata). |
+| `InpPartialTriggerUSD` | **Dollari** di profitto per far scattare la chiusura parziale (default 3.00). |
+| `InpEnableTrading` | Stato iniziale del pulsante Trading ON/OFF. |
+
 Tutto il resto (finestra di osservazione, secondi di anticipo, scadenza
 ordini, slippage, magic number) è fissato a valori sensati e non compare
-più tra gli input, per tenere le proprietà semplici.
+più tra gli input, per tenere le proprietà semplici — su entrambi gli EA.
 
 ## Note sulla gestione del rischio
 
