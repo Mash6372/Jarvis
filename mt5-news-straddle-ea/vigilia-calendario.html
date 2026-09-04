@@ -1,5 +1,5 @@
 <title>Vigilia</title>
-<meta name="description" content="Calendario delle news ad alto impatto per Aquila (forex) e Aurum (oro): quali eventi muovono quali coppie, e le date confermate da settembre a dicembre 2026.">
+<meta name="description" content="Calendario delle news ad alto impatto per Aquila (forex) e Aurum (oro): quali eventi muovono quali coppie, quale bot usare per ciascuno, e le date confermate per i prossimi mesi.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Source+Sans+3:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -80,7 +80,7 @@
     line-height:1.55;
     -webkit-font-smoothing:antialiased;
   }
-  .wrap{max-width:920px;margin:0 auto;padding:56px 24px 80px;}
+  .wrap{max-width:940px;margin:0 auto;padding:56px 24px 80px;}
 
   h1,h2,h3{font-family:"Fraunces", Georgia, serif; text-wrap:balance; margin:0;}
   .eyebrow{
@@ -98,7 +98,7 @@
   header.page{margin-bottom:44px;}
   header.page h1{font-size:clamp(38px,6vw,54px); font-weight:600; margin-top:10px; letter-spacing:-.01em;}
   header.page p.lede{
-    max-width:62ch; color:var(--text-dim); font-size:18px; margin-top:14px;
+    max-width:64ch; color:var(--text-dim); font-size:18px; margin-top:14px;
   }
   .bots{display:flex; gap:10px; margin-top:22px; flex-wrap:wrap;}
   .bot-chip{
@@ -131,10 +131,10 @@
 
   section{margin-top:56px;}
   section > h2{font-size:26px; font-weight:600; margin-bottom:6px;}
-  section > .sub{color:var(--text-dim); font-size:15px; max-width:62ch; margin-bottom:24px;}
+  section > .sub{color:var(--text-dim); font-size:15px; max-width:64ch; margin-bottom:24px;}
 
   .legend{
-    display:flex; flex-wrap:wrap; gap:18px; margin-bottom:28px;
+    display:flex; flex-wrap:wrap; gap:16px 22px; margin-bottom:24px;
     font-size:13.5px; color:var(--text-dim); font-family:"IBM Plex Mono",monospace;
   }
   .legend span{display:flex;align-items:center;gap:7px;}
@@ -144,7 +144,12 @@
   .impact i.on.med{background:var(--med);}
   .impact i.on.low{background:var(--low);}
 
-  .filters{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:28px;}
+  .filters-group{margin-bottom:14px;}
+  .filters-group .flabel{
+    font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--text-dim); margin-bottom:8px; display:block;
+  }
+  .filters{display:flex; flex-wrap:wrap; gap:8px;}
   .filter-btn{
     font-family:"IBM Plex Mono",monospace; font-size:12.5px;
     border:1px solid var(--border); background:var(--surface); color:var(--text-dim);
@@ -153,6 +158,7 @@
   .filter-btn:hover{border-color:var(--accent);}
   .filter-btn.active{background:var(--accent); border-color:var(--accent); color:var(--bg);}
   .filter-btn:focus-visible{outline:2px solid var(--accent2); outline-offset:2px;}
+  .filters-row{margin-bottom:16px;}
 
   .month-block{margin-bottom:8px;}
   .month-head{
@@ -161,19 +167,17 @@
   .month-head h3{font-size:18px; font-weight:500; color:var(--text); white-space:nowrap;}
   .month-head .rule{flex:1; height:1px; background:var(--rule);}
 
-  .events{display:flex; flex-direction:column; gap:2px;}
+  .events{display:flex; flex-direction:column; gap:8px;}
   .ev{
     display:grid;
     grid-template-columns: 84px 1fr auto;
     gap:4px 18px;
-    padding:14px 16px;
+    padding:16px;
     background:var(--surface);
     border:1px solid var(--border);
     border-radius:8px;
     align-items:start;
-    transition:opacity .15s ease;
   }
-  .ev + .ev{margin-top:6px;}
   .ev.hide{display:none;}
   .ev .date{
     font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--text-dim);
@@ -181,11 +185,26 @@
   }
   .ev .date b{display:block; font-size:20px; color:var(--text); font-weight:600; line-height:1.1;}
   .ev .main .name{font-size:16px; font-weight:600;}
-  .ev .main .meta{
-    font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--text-dim); margin-top:4px;
-    display:flex; flex-wrap:wrap; gap:4px 14px;
+
+  .bot-badges{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px;}
+  .bot-badge{
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:600;
+    padding:4px 10px 4px 8px; border-radius:100px; border:1px solid;
+    display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
   }
-  .ev .main .note{font-size:13.5px; color:var(--high); margin-top:6px;}
+  .bot-badge.aquila{background:var(--accent2-soft); color:var(--accent2); border-color:var(--accent2);}
+  .bot-badge.aurum{background:var(--accent-soft); color:var(--accent); border-color:var(--accent);}
+  .bot-badge .arrow{opacity:.65;}
+
+  .ev .main .meta{
+    font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--text-dim); margin-top:9px;
+    display:flex; flex-wrap:wrap; gap:5px 14px; align-items:center;
+  }
+  .input-chip{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:4px;
+    padding:1px 7px; color:var(--text); font-weight:600;
+  }
+  .ev .main .note{font-size:13.5px; color:var(--high); margin-top:8px;}
   .ev .main .note.warn::before{content:"⚠ ";}
   .tags{display:flex; flex-direction:column; align-items:flex-end; gap:8px;}
   .tag{
@@ -196,7 +215,7 @@
   .tag.eur{background:var(--accent-soft); color:var(--accent);}
   .tag.gbp{background:var(--low-soft); color:var(--low);}
   .tag.eur-gbp{background:var(--accent-soft); color:var(--accent);}
-  .gold-tag{display:flex; align-items:center; gap:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--text-dim);}
+  .gold-tag{display:flex; align-items:center; gap:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--text-dim); white-space:nowrap;}
 
   table.ref{
     width:100%; border-collapse:collapse; font-size:14.5px;
@@ -214,6 +233,7 @@
   table.ref tr:last-child td{border-bottom:none;}
   table.ref td.num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;}
   table.ref td.evname{font-weight:600;}
+  table.ref td.botcell{white-space:nowrap;}
 
   .howto{
     display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;
@@ -237,8 +257,8 @@
   footer .sources{margin-top:10px; display:flex; flex-wrap:wrap; gap:4px 14px;}
 
   @media (max-width:600px){
-    .ev{grid-template-columns:64px 1fr; }
-    .tags{grid-column:1/-1; flex-direction:row; align-items:center;}
+    .ev{grid-template-columns:56px 1fr; }
+    .tags{grid-column:1/-1; flex-direction:row; align-items:center; flex-wrap:wrap;}
   }
 </style>
 
@@ -247,85 +267,112 @@
   <header class="page">
     <div class="eyebrow">Aquila · Aurum — calendario notizie</div>
     <h1>Vigilia</h1>
-    <p class="lede">Gli eventi che muovono davvero il mercato in modo repentino, con le date confermate per i prossimi mesi — cosa impostare in <code>InpNewsTime</code> e su quale grafico attaccare i due bot.</p>
+    <p class="lede">Gli eventi che muovono davvero il mercato in modo repentino, con le date confermate per i prossimi mesi, quale dei due bot usare per ciascuno e l'orario già pronto da incollare in <code>InpNewsTime</code>.</p>
     <div class="bots">
-      <span class="bot-chip"><span class="dot teal"></span><b>Aquila</b> — forex, distanze in pips</span>
-      <span class="bot-chip"><span class="dot gold"></span><b>Aurum</b> — oro, distanze in $ equivalenti</span>
+      <span class="bot-chip"><span class="dot teal"></span><b>🦅 Aquila</b> — forex, distanze in pips</span>
+      <span class="bot-chip"><span class="dot gold"></span><b>🥇 Aurum</b> — oro, distanze in $ equivalenti</span>
     </div>
   </header>
 
   <div class="callout">
     <div class="t">Prima di fidarti di una data</div>
     <p>Il calendario USA 2026 ha subito diversi <strong>rinvii</strong> per lo shutdown di governo: a gennaio l'NFP è slittato dall'8:30 ora abituale a un'uscita l'11 febbraio, ad aprile il dato è arrivato il secondo venerdì invece del primo, e a giugno è uscito di giovedì anziché di venerdì. Le riunioni di BCE, BOE e Fed (FOMC) sono invece calendarizzate con largo anticipo e cambiano di rado.</p>
-    <p><strong>Regola pratica:</strong> per FOMC / BCE / BOE puoi fidarti delle date qui sotto. Per NFP e CPI, ricontrolla su <a href="#" style="color:inherit;text-decoration:underline;" onclick="return false;">Forex Factory</a> o Investing.com nei giorni immediatamente precedenti, prima di scrivere l'orario in <code>InpNewsTime</code>.</p>
+    <p><strong>Regola pratica:</strong> per FOMC / BCE / BOE puoi fidarti delle date qui sotto. Per NFP e CPI, ricontrolla su Forex Factory o Investing.com nei giorni immediatamente precedenti, prima di scrivere l'orario in <code>InpNewsTime</code>.</p>
   </div>
 
   <section id="calendario">
     <h2>Calendario, settembre–dicembre 2026</h2>
-    <p class="sub">Orari già convertiti in ora italiana. Fonti: Federal Reserve, BCE, Bank of England, Bureau of Labor Statistics (vedi note e link in fondo pagina).</p>
+    <p class="sub">Orari già convertiti in ora italiana. Ogni evento indica quale bot usare, su quale grafico, e il valore pronto per <code>InpNewsTime</code>. Fonti in fondo pagina.</p>
 
     <div class="legend">
-      <span><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span> Alto impatto sull'oro</span>
-      <span><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span> Impatto medio</span>
-      <span><span class="impact"><i class="on low"></i><i></i><i></i></span> Impatto basso/indiretto</span>
+      <span><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span> Alto impatto sull'oro (livello NFP/FOMC)</span>
+      <span><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span> Impatto medio/indiretto</span>
+      <span><span class="impact"><i class="on low"></i><i></i><i></i></span> Impatto basso — l'oro reagisce poco</span>
     </div>
 
-    <div class="filters" role="group" aria-label="Filtra per valuta">
-      <button class="filter-btn active" data-filter="all">Tutti</button>
-      <button class="filter-btn" data-filter="usd">USD</button>
-      <button class="filter-btn" data-filter="eur">EUR</button>
-      <button class="filter-btn" data-filter="gbp">GBP</button>
+    <div class="filters-row">
+      <div class="filters-group">
+        <span class="flabel">Per bot</span>
+        <div class="filters" role="group" aria-label="Filtra per bot">
+          <button class="filter-btn active" data-bf="all">Tutti</button>
+          <button class="filter-btn" data-bf="aquila">🦅 Aquila</button>
+          <button class="filter-btn" data-bf="aurum">🥇 Aurum</button>
+        </div>
+      </div>
+      <div class="filters-group">
+        <span class="flabel">Per valuta</span>
+        <div class="filters" role="group" aria-label="Filtra per valuta">
+          <button class="filter-btn active" data-cf="all">Tutte</button>
+          <button class="filter-btn" data-cf="usd">USD</button>
+          <button class="filter-btn" data-cf="eur">EUR</button>
+          <button class="filter-btn" data-cf="gbp">GBP</button>
+        </div>
+      </div>
     </div>
 
     <div class="month-block">
       <div class="month-head"><h3>Settembre 2026</h3><div class="rule"></div></div>
       <div class="events">
 
-        <div class="ev" data-cur="eur">
+        <div class="ev" data-cur="eur" data-bot="aquila">
           <div class="date"><b>10</b>gio</div>
           <div class="main">
             <div class="name">Decisione tassi BCE + conferenza Lagarde</div>
-            <div class="meta"><span>14:15 IT decisione</span><span>14:45 IT conferenza</span><span>Aquila → EURUSD</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>14:15 IT decisione</span><span>14:45 IT conferenza</span><span><code class="input-chip">InpNewsTime = 14:15</code></span></div>
           </div>
           <div class="tags">
             <span class="tag eur">EUR</span>
-            <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>indiretto</span>
+            <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>Medio</span>
           </div>
         </div>
 
-        <div class="ev" data-cur="usd">
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>11</b>ven</div>
           <div class="main">
             <div class="name">CPI USA (dato agosto)</div>
-            <div class="meta"><span>8:30 ET → 14:30 IT</span><span>Aurum + Aquila su USD</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
           </div>
           <div class="tags">
             <span class="tag usd">USD</span>
-            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
         </div>
 
-        <div class="ev" data-cur="usd">
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>15–16</b>mar–mer</div>
           <div class="main">
             <div class="name">Riunione FOMC — decisione 16 settembre</div>
-            <div class="meta"><span>14:00 ET → 20:00 IT decisione</span><span>14:30 ET → 20:30 IT conferenza Powell</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>14:00 ET → 20:00 IT decisione</span><span>14:30 ET → 20:30 IT conferenza Powell</span><span><code class="input-chip">InpNewsTime = 20:00</code></span></div>
           </div>
           <div class="tags">
             <span class="tag usd">USD</span>
-            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
         </div>
 
-        <div class="ev" data-cur="gbp">
+        <div class="ev" data-cur="gbp" data-bot="aquila">
           <div class="date"><b>17</b>gio</div>
           <div class="main">
             <div class="name">Decisione tassi BOE (MPC)</div>
-            <div class="meta"><span>12:00 UK → 13:00 IT</span><span>Aquila → GBPUSD</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> GBPUSD</span>
+            </div>
+            <div class="meta"><span>12:00 UK → 13:00 IT</span><span><code class="input-chip">InpNewsTime = 13:00</code></span></div>
           </div>
           <div class="tags">
             <span class="tag gbp">GBP</span>
-            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>basso</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
         </div>
 
@@ -336,53 +383,68 @@
       <div class="month-head"><h3>Ottobre 2026</h3><div class="rule"></div></div>
       <div class="events">
 
-        <div class="ev" data-cur="usd">
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>2</b>ven</div>
           <div class="main">
             <div class="name">NFP — Non-Farm Payrolls (dato settembre)</div>
-            <div class="meta"><span>8:30 ET → 14:30 IT</span><span>Aurum + Aquila su USD</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
             <div class="note warn">Data annunciata ma calendario 2026 instabile: verifica su Forex Factory il giorno prima</div>
           </div>
           <div class="tags">
             <span class="tag usd">USD</span>
-            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
         </div>
 
-        <div class="ev" data-cur="usd">
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>14</b>mer</div>
           <div class="main">
             <div class="name">CPI USA (dato settembre)</div>
-            <div class="meta"><span>8:30 ET → 14:30 IT</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
           </div>
           <div class="tags">
             <span class="tag usd">USD</span>
-            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
         </div>
 
-        <div class="ev" data-cur="usd">
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>27–28</b>mar–mer</div>
           <div class="main">
             <div class="name">Riunione FOMC — decisione 28 ottobre</div>
-            <div class="meta"><span>14:00 ET → <strong>19:00 IT</strong> decisione</span><span>14:30 ET → 19:30 IT conferenza</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>14:00 ET → <strong>19:00 IT</strong> decisione</span><span>14:30 ET → 19:30 IT conferenza</span><span><code class="input-chip">InpNewsTime = 19:00</code></span></div>
             <div class="note warn">Non è 20:00! Il 25 ottobre l'Italia torna all'ora solare ma gli USA restano in ora legale fino al 1° novembre: per questa settimana la differenza scende a 5 ore invece di 6.</div>
           </div>
           <div class="tags">
             <span class="tag usd">USD</span>
-            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
         </div>
 
-        <div class="ev" data-cur="eur">
+        <div class="ev" data-cur="eur" data-bot="aquila">
           <div class="date"><b>29</b>gio</div>
           <div class="main">
             <div class="name">Decisione tassi BCE + conferenza Lagarde</div>
-            <div class="meta"><span>14:15 IT decisione</span><span>14:45 IT conferenza</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>14:15 IT decisione</span><span>14:45 IT conferenza</span><span><code class="input-chip">InpNewsTime = 14:15</code></span></div>
           </div>
           <div class="tags">
             <span class="tag eur">EUR</span>
-            <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>indiretto</span>
+            <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>Medio</span>
           </div>
         </div>
 
@@ -393,40 +455,51 @@
       <div class="month-head"><h3>Novembre 2026</h3><div class="rule"></div></div>
       <div class="events">
 
-        <div class="ev" data-cur="gbp">
+        <div class="ev" data-cur="gbp" data-bot="aquila">
           <div class="date"><b>5</b>gio</div>
           <div class="main">
             <div class="name">Decisione tassi BOE + Monetary Policy Report</div>
-            <div class="meta"><span>12:00 UK → 13:00 IT</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> GBPUSD</span>
+            </div>
+            <div class="meta"><span>12:00 UK → 13:00 IT</span><span><code class="input-chip">InpNewsTime = 13:00</code></span></div>
           </div>
           <div class="tags">
             <span class="tag gbp">GBP</span>
-            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>basso</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
         </div>
 
-        <div class="ev" data-cur="usd">
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>10</b>mar</div>
           <div class="main">
             <div class="name">CPI USA (dato ottobre)</div>
-            <div class="meta"><span>8:30 ET → 14:30 IT</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
           </div>
           <div class="tags">
             <span class="tag usd">USD</span>
-            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
         </div>
 
-        <div class="ev" data-cur="usd">
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>?</b>ven</div>
           <div class="main">
             <div class="name">NFP — dato non confermato per novembre</div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
             <div class="meta"><span>tipicamente 8:30 ET → 14:30 IT</span></div>
-            <div class="note warn">Nessuna fonte ufficiale trovata per un'uscita a inizio novembre: il dato di ottobre risulta spostato al 4 dicembre. Controlla il calendario economico prima di impostare Aurum/Aquila su questo evento.</div>
+            <div class="note warn">Nessuna fonte ufficiale trovata per un'uscita a inizio novembre: il dato di ottobre risulta spostato al 4 dicembre. Non impostare i bot su questa riga finché non trovi la data esatta su un calendario economico aggiornato.</div>
           </div>
           <div class="tags">
             <span class="tag usd">USD</span>
-            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
         </div>
 
@@ -437,51 +510,66 @@
       <div class="month-head"><h3>Dicembre 2026</h3><div class="rule"></div></div>
       <div class="events">
 
-        <div class="ev" data-cur="usd">
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>4</b>ven</div>
           <div class="main">
             <div class="name">NFP — Non-Farm Payrolls (dato ottobre)</div>
-            <div class="meta"><span>8:30 ET → 14:30 IT</span><span>Aurum + Aquila su USD</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
           </div>
           <div class="tags">
             <span class="tag usd">USD</span>
-            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
         </div>
 
-        <div class="ev" data-cur="usd">
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>8–9</b>mar–mer</div>
           <div class="main">
             <div class="name">Riunione FOMC — decisione 9 dicembre</div>
-            <div class="meta"><span>14:00 ET → 20:00 IT decisione</span><span>14:30 ET → 20:30 IT conferenza</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>14:00 ET → 20:00 IT decisione</span><span>14:30 ET → 20:30 IT conferenza</span><span><code class="input-chip">InpNewsTime = 20:00</code></span></div>
           </div>
           <div class="tags">
             <span class="tag usd">USD</span>
-            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
         </div>
 
-        <div class="ev" data-cur="usd">
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>10</b>gio</div>
           <div class="main">
             <div class="name">CPI USA (dato novembre)</div>
-            <div class="meta"><span>8:30 ET → 14:30 IT</span></div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
           </div>
           <div class="tags">
             <span class="tag usd">USD</span>
-            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>alto</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
         </div>
 
-        <div class="ev" data-cur="eur gbp">
+        <div class="ev" data-cur="eur gbp" data-bot="aquila">
           <div class="date"><b>17</b>gio</div>
           <div class="main">
             <div class="name">Decisione BCE <em>e</em> decisione BOE — stesso giorno</div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD o GBPUSD</span>
+            </div>
             <div class="meta"><span>BCE 14:15 / 14:45 IT</span><span>BOE 12:00 UK → 13:00 IT</span></div>
           </div>
           <div class="tags">
             <span class="tag eur-gbp">EUR + GBP</span>
-            <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>indiretto</span>
+            <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>Medio</span>
           </div>
         </div>
 
@@ -491,7 +579,7 @@
 
   <section id="guida">
     <h2>Guida agli eventi: cosa muove cosa</h2>
-    <p class="sub">Non solo le date sopra: questi sono i tipi di notizia da tenere d'occhio ogni mese, in ordine di violenza del movimento sull'oro.</p>
+    <p class="sub">Non solo le date sopra: questi sono i tipi di notizia da tenere d'occhio ogni mese, in ordine di violenza del movimento sull'oro, con il bot giusto per ciascuno.</p>
 
     <div class="table-wrap">
       <table class="ref">
@@ -501,9 +589,8 @@
             <th>Valuta</th>
             <th>Frequenza</th>
             <th>Orario tipico</th>
-            <th>Coppie coinvolte</th>
             <th>Impatto sull'oro</th>
-            <th>Adatto ai bot?</th>
+            <th>Bot consigliato</th>
           </tr>
         </thead>
         <tbody>
@@ -512,95 +599,85 @@
             <td>USD</td>
             <td class="num">8×/anno</td>
             <td class="num">20:00 IT*</td>
-            <td>Tutte le major USD, XAUUSD</td>
-            <td><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span></td>
-            <td>Sì, il migliore</td>
+            <td><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span> Alto</td>
+            <td class="botcell">🥇 Aurum + 🦅 Aquila</td>
           </tr>
           <tr>
             <td class="evname">CPI USA</td>
             <td>USD</td>
             <td class="num">mensile</td>
             <td class="num">14:30 IT*</td>
-            <td>Tutte le major USD, XAUUSD</td>
-            <td><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span></td>
-            <td>Sì, il migliore</td>
+            <td><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span> Alto</td>
+            <td class="botcell">🥇 Aurum + 🦅 Aquila</td>
           </tr>
           <tr>
             <td class="evname">NFP — Non-Farm Payrolls</td>
             <td>USD</td>
             <td class="num">mensile</td>
             <td class="num">14:30 IT*</td>
-            <td>Tutte le major USD, XAUUSD</td>
-            <td><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span></td>
-            <td>Sì, storico</td>
+            <td><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span> Alto</td>
+            <td class="botcell">🥇 Aurum + 🦅 Aquila</td>
           </tr>
           <tr>
             <td class="evname">Core PCE</td>
             <td>USD</td>
             <td class="num">mensile</td>
             <td class="num">14:30 IT*</td>
-            <td>Tutte le major USD, XAUUSD</td>
-            <td><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span></td>
-            <td>Sì</td>
+            <td><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span> Medio</td>
+            <td class="botcell">🥇 Aurum + 🦅 Aquila</td>
           </tr>
           <tr>
             <td class="evname">ISM Manufacturing / Services PMI</td>
             <td>USD</td>
             <td class="num">mensile</td>
             <td class="num">16:00 IT*</td>
-            <td>EURUSD, GBPUSD, XAUUSD</td>
-            <td><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span></td>
-            <td>Sì</td>
+            <td><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span> Medio</td>
+            <td class="botcell">🥇 Aurum + 🦅 Aquila</td>
           </tr>
           <tr>
             <td class="evname">Retail Sales / GDP USA</td>
             <td>USD</td>
             <td class="num">mensile / trim.</td>
             <td class="num">14:30 IT*</td>
-            <td>Major USD, XAUUSD</td>
-            <td><span class="impact"><i class="on med"></i><i></i><i></i></span></td>
-            <td>Sì</td>
+            <td><span class="impact"><i class="on med"></i><i></i><i></i></span> Medio-basso</td>
+            <td class="botcell">🦅 Aquila (Aurum solo se ti fidi)</td>
           </tr>
           <tr>
             <td class="evname">ADP Employment</td>
             <td>USD</td>
             <td class="num">mensile</td>
             <td class="num">14:15 IT*</td>
-            <td>Major USD, XAUUSD (reazione minore)</td>
-            <td><span class="impact"><i class="on med"></i><i></i><i></i></span></td>
-            <td>Sì, ma reazione più debole</td>
+            <td><span class="impact"><i class="on med"></i><i></i><i></i></span> Medio-basso</td>
+            <td class="botcell">🦅 Aquila (Aurum solo se ti fidi)</td>
           </tr>
           <tr>
             <td class="evname">BCE — decisione tassi</td>
             <td>EUR</td>
             <td class="num">8×/anno</td>
             <td class="num">14:15 IT</td>
-            <td>EURUSD, EURGBP, EURJPY</td>
-            <td><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span></td>
-            <td>Sì, su EURUSD</td>
+            <td><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span> Medio (indiretto)</td>
+            <td class="botcell">🦅 Aquila su EURUSD</td>
           </tr>
           <tr>
             <td class="evname">BOE — decisione tassi (MPC)</td>
             <td>GBP</td>
             <td class="num">8×/anno</td>
             <td class="num">13:00 IT</td>
-            <td>GBPUSD, EURGBP, GBPJPY</td>
-            <td><span class="impact"><i class="on low"></i><i></i><i></i></span></td>
-            <td>Sì, su GBPUSD</td>
+            <td><span class="impact"><i class="on low"></i><i></i><i></i></span> Basso</td>
+            <td class="botcell">🦅 Aquila su GBPUSD</td>
           </tr>
           <tr>
             <td class="evname">BOJ — decisione tassi</td>
             <td>JPY</td>
             <td class="num">8×/anno</td>
             <td class="num">variabile*</td>
-            <td>USDJPY, EURJPY</td>
-            <td><span class="impact"><i class="on low"></i><i></i><i></i></span></td>
-            <td>No — orario non fisso</td>
+            <td><span class="impact"><i class="on low"></i><i></i><i></i></span> Basso</td>
+            <td class="botcell">Nessuno — orario non fisso</td>
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="sub" style="margin-top:14px;">* Orario indicativo in ora italiana durante il periodo CEST/EDT (giugno–ottobre); verifica sempre la conversione esatta nel calendario economico, specialmente nelle settimane di cambio ora legale (fine marzo e fine ottobre). Il BOJ non pubblica un orario fisso di rilascio, quindi non è adatto alla logica "3 secondi prima" dei bot.</p>
+    <p class="sub" style="margin-top:14px;">* Orario indicativo in ora italiana durante il periodo CEST/EDT (giugno–ottobre); verifica sempre la conversione esatta nel calendario economico, specialmente nelle settimane di cambio ora legale (fine marzo e fine ottobre — vedi l'avviso sul FOMC di ottobre nel calendario sopra). Il BOJ non pubblica un orario fisso di rilascio, quindi non è adatto alla logica "3 secondi prima" dei bot.</p>
   </section>
 
   <section id="uso">
@@ -608,19 +685,19 @@
     <div class="howto">
       <div class="step">
         <div class="n">01 — Scegli l'evento</div>
-        <p>Guarda il calendario sopra (o Forex Factory il giorno prima) e prendi l'orario <strong>già convertito in ora italiana</strong>.</p>
+        <p>Guarda il calendario sopra (o Forex Factory il giorno prima per NFP/CPI) e prendi l'orario <strong>già convertito in ora italiana</strong>, indicato nel chip <code>InpNewsTime</code>.</p>
       </div>
       <div class="step">
-        <div class="n">02 — Scegli il bot</div>
-        <p>Notizie che muovono l'oro (FOMC, CPI, NFP, PCE) → attacca <code>Aurum</code> al grafico XAUUSD. Notizie forex pure (BCE, BOE) → attacca <code>Aquila</code> alla coppia giusta (EURUSD, GBPUSD…).</p>
+        <div class="n">02 — Segui i badge</div>
+        <p>Ogni evento mostra quale bot usare: 🥇 <strong>Aurum</strong> per XAUUSD (eventi USD ad alto/medio impatto sull'oro), 🦅 <strong>Aquila</strong> per la coppia forex indicata. Alcuni eventi vanno bene per entrambi contemporaneamente.</p>
       </div>
       <div class="step">
         <div class="n">03 — Imposta l'orario</div>
-        <p>Apri le proprietà dell'EA, scrivi l'orario in <code>InpNewsTime</code> (formato <code>HH:MM</code>), premi OK.</p>
+        <p>Apri le proprietà dell'EA sul grafico giusto, incolla il valore del chip in <code>InpNewsTime</code>, premi OK.</p>
       </div>
       <div class="step">
         <div class="n">04 — Verifica sul pannello</div>
-        <p>Controlla il countdown nella dashboard sul grafico: se il numero non torna, l'orario inserito è sbagliato — ricontrollalo prima che scatti.</p>
+        <p>Controlla il countdown nella dashboard sul grafico: se il numero non torna con quanto manca davvero alla notizia, l'orario inserito è sbagliato — ricontrollalo prima che scatti.</p>
       </div>
     </div>
   </section>
@@ -640,20 +717,36 @@
 
 <script>
   (function(){
-    var buttons = document.querySelectorAll('.filter-btn');
+    var currencyBtns = document.querySelectorAll('[data-cf]');
+    var botBtns = document.querySelectorAll('[data-bf]');
     var events = document.querySelectorAll('.ev');
-    buttons.forEach(function(btn){
+    var curFilter = 'all';
+    var botFilter = 'all';
+
+    function apply(){
+      events.forEach(function(ev){
+        var cur = (ev.getAttribute('data-cur')||'');
+        var bot = (ev.getAttribute('data-bot')||'');
+        var okCur = curFilter === 'all' || cur.indexOf(curFilter) !== -1;
+        var okBot = botFilter === 'all' || bot.indexOf(botFilter) !== -1;
+        ev.classList.toggle('hide', !(okCur && okBot));
+      });
+    }
+
+    currencyBtns.forEach(function(btn){
       btn.addEventListener('click', function(){
-        buttons.forEach(function(b){ b.classList.remove('active'); });
+        currencyBtns.forEach(function(b){ b.classList.remove('active'); });
         btn.classList.add('active');
-        var f = btn.getAttribute('data-filter');
-        events.forEach(function(ev){
-          if(f === 'all' || (ev.getAttribute('data-cur')||'').indexOf(f) !== -1){
-            ev.classList.remove('hide');
-          } else {
-            ev.classList.add('hide');
-          }
-        });
+        curFilter = btn.getAttribute('data-cf');
+        apply();
+      });
+    });
+    botBtns.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        botBtns.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        botFilter = btn.getAttribute('data-bf');
+        apply();
       });
     });
   })();
