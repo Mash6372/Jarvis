@@ -221,6 +221,27 @@
   .tag.chf{background:var(--med-soft); color:var(--med);}
   .gold-tag{display:flex; align-items:center; gap:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--text-dim); white-space:nowrap;}
 
+  .status-tag{
+    font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.05em;
+    padding:2px 8px; border-radius:100px; font-weight:600; white-space:nowrap; border:1px solid;
+  }
+  .status-tag.confirmed{background:var(--low-soft); color:var(--low); border-color:var(--low);}
+  .status-tag.indicative{background:var(--med-soft); color:var(--med); border-color:var(--med);}
+  .status-tag.tbc{background:var(--surface-2); color:var(--text-dim); border-color:var(--border);}
+
+  .today-section{
+    background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    padding:20px 22px; margin-bottom:18px; box-shadow:var(--shadow);
+  }
+  .today-head{display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:4px;}
+  .today-head h3{font-size:17px; font-weight:600; color:var(--text);}
+  .today-head .live-dot{display:inline-flex; align-items:center; gap:6px; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--text-dim);}
+  .today-head .live-dot i{width:7px; height:7px; border-radius:50%; background:var(--low); display:inline-block; box-shadow:0 0 0 3px var(--low-soft);}
+  .today-empty{color:var(--text-dim); font-size:14.5px; padding:6px 0;}
+  .surprise-beat{color:var(--low); font-weight:600;}
+  .surprise-miss{color:var(--high); font-weight:600;}
+  .surprise-inline{color:var(--text-dim); font-size:11.5px; margin-left:4px;}
+
   table.ref{
     width:100%; border-collapse:collapse; font-size:14.5px;
     background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden;
@@ -293,6 +314,14 @@
     <p><strong>Il badge "Basso/Medio/Alto" è calcolato contro il dollaro USA.</strong> Una decisione RBA o RBNZ segnata "Basso" può comunque generare un movimento violento su una cross diretta come AUDNZD (esattamente il caso che hai visto il 2 settembre), perché lì non c'è il dollaro a diluire la sorpresa: le due valute si muovono l'una contro l'altra in modo netto. Se operi la cross diretta, considera l'impatto reale più alto di quanto indicato dal badge.</p>
   </div>
 
+  <div class="today-section">
+    <div class="today-head">
+      <h3>Oggi e domani — sabato 5 / domenica 6 settembre 2026</h3>
+      <span class="live-dot"><i></i>Aggiornato dal Routine giornaliero</span>
+    </div>
+    <p class="today-empty">Nessun evento ad alto impatto oggi e domani: weekend, mercati forex chiusi (riaprono lunedì con lo spread tipicamente più largo alle prime candele). Il prossimo evento in calendario è la <strong>BCE il 10 settembre</strong> — vedi la sezione sotto.</p>
+  </div>
+
   <section id="calendario">
     <h2>Calendario, settembre 2026 – febbraio 2027</h2>
     <p class="sub">Orari già convertiti in ora italiana. Ogni evento indica quale bot usare, su quale grafico, e il valore pronto per <code>InpNewsTime</code>. Fonti in fondo pagina.</p>
@@ -301,6 +330,11 @@
       <span><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span> Alto impatto sull'oro (livello NFP/FOMC)</span>
       <span><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span> Impatto medio/indiretto</span>
       <span><span class="impact"><i class="on low"></i><i></i><i></i></span> Impatto basso — l'oro reagisce poco</span>
+    </div>
+    <div class="legend">
+      <span><span class="status-tag confirmed">CONFERMATA</span> data ufficiale dalla fonte primaria (banca centrale/ente statistico)</span>
+      <span><span class="status-tag indicative">INDICATIVA</span> pattern abituale, non ancora confermata ufficialmente</span>
+      <span><span class="status-tag tbc">DA FISSARE</span> calendario non ancora pubblicato dall'istituzione</span>
     </div>
 
     <div class="filters-row">
@@ -341,6 +375,7 @@
             <div class="meta"><span>14:15 IT decisione</span><span>14:45 IT conferenza</span><span><code class="input-chip">InpNewsTime = 14:15</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag eur">EUR</span>
             <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>Medio</span>
           </div>
@@ -357,6 +392,7 @@
             <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -373,6 +409,7 @@
             <div class="meta"><span>14:00 ET → 20:00 IT decisione</span><span>14:30 ET → 20:30 IT conferenza Powell</span><span><code class="input-chip">InpNewsTime = 20:00</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -388,6 +425,7 @@
             <div class="meta"><span>12:00 UK → 13:00 IT</span><span><code class="input-chip">InpNewsTime = 13:00</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag gbp">GBP</span>
             <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
@@ -403,6 +441,7 @@
             <div class="meta"><span>~9:30 IT (Svizzera stesso fuso dell'Italia)</span><span><code class="input-chip">InpNewsTime = 09:30</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag chf">CHF</span>
             <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
@@ -419,6 +458,7 @@
             <div class="note warn">Orario antelucano in Italia: se non sei sveglio così presto, valuta se vale la pena impostarlo la sera prima.</div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag aud">AUD</span>
             <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
@@ -443,6 +483,7 @@
             <div class="note warn">Data annunciata ma calendario 2026 instabile: verifica su Forex Factory il giorno prima</div>
           </div>
           <div class="tags">
+            <span class="status-tag indicative">INDICATIVA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -459,6 +500,7 @@
             <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -474,6 +516,7 @@
             <div class="meta"><span>14:00 NZDT → 02:00 IT</span><span><code class="input-chip">InpNewsTime = 02:00</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag nzd">NZD</span>
             <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
@@ -491,6 +534,7 @@
             <div class="note warn">Non è 20:00! Il 25 ottobre l'Italia torna all'ora solare ma gli USA restano in ora legale fino al 1° novembre: per questa settimana la differenza scende a 5 ore invece di 6.</div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -507,6 +551,7 @@
             <div class="note warn">Stesso giorno della decisione FOMC (ore 19:00 IT): due eventi USD-collegati nella stessa giornata, occhio a non sovrapporre i bot sullo stesso conto senza controllo.</div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag cad">CAD</span>
             <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
@@ -522,6 +567,7 @@
             <div class="meta"><span>14:15 IT decisione</span><span>14:45 IT conferenza</span><span><code class="input-chip">InpNewsTime = 14:15</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag eur">EUR</span>
             <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>Medio</span>
           </div>
@@ -545,6 +591,7 @@
             <div class="note warn">Dal 4 ottobre l'Australia (parti che osservano l'ora legale) passa ad AEDT: verifica sempre la differenza esatta vicino alla data.</div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag aud">AUD</span>
             <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
@@ -560,6 +607,7 @@
             <div class="meta"><span>12:00 UK → 13:00 IT</span><span><code class="input-chip">InpNewsTime = 13:00</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag gbp">GBP</span>
             <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
@@ -576,6 +624,7 @@
             <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -593,6 +642,7 @@
             <div class="note warn">Nessuna fonte ufficiale trovata per un'uscita a inizio novembre: il dato di ottobre risulta spostato al 4 dicembre. Non impostare i bot su questa riga finché non trovi la data esatta su un calendario economico aggiornato.</div>
           </div>
           <div class="tags">
+            <span class="status-tag tbc">DA FISSARE</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -616,6 +666,7 @@
             <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -631,6 +682,7 @@
             <div class="meta"><span>14:30 AEDT → 4:30 IT</span><span>15:30 AEDT → 5:30 IT conferenza</span><span><code class="input-chip">InpNewsTime = 04:30</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag aud">AUD</span>
             <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
@@ -647,6 +699,7 @@
             <div class="meta"><span>14:00 ET → 20:00 IT decisione</span><span>14:30 ET → 20:30 IT conferenza</span><span><code class="input-chip">InpNewsTime = 20:00</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -663,6 +716,7 @@
             <div class="note warn">Stesso giorno di FOMC (20:00 IT) e RBNZ (02:00 IT, notte precedente): tre banche centrali il 9 dicembre, orari ben distanziati ma occhio a non accavallare i bot.</div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag cad">CAD</span>
             <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
@@ -679,6 +733,7 @@
             <div class="note warn">Stesso giorno (calendario italiano) di FOMC e Bank of Canada, entrambi la sera: tre banche centrali il 9 dicembre.</div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag nzd">NZD</span>
             <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
@@ -695,6 +750,7 @@
             <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -710,6 +766,7 @@
             <div class="meta"><span>~9:30 IT (stesso fuso della Svizzera)</span><span><code class="input-chip">InpNewsTime = 09:30</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag chf">CHF</span>
             <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
@@ -725,6 +782,7 @@
             <div class="meta"><span>BCE 14:15 / 14:45 IT</span><span>BOE 12:00 UK → 13:00 IT</span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag eur-gbp">EUR + GBP</span>
             <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>Medio</span>
           </div>
@@ -749,6 +807,7 @@
             <div class="note warn">Data proiettata (primo venerdì del mese): il calendario BLS 2027 non è ancora ufficiale e resta il rischio di un nuovo shutdown dopo la scadenza fondi del 30 settembre 2026. Verifica su Forex Factory il giorno prima.</div>
           </div>
           <div class="tags">
+            <span class="status-tag indicative">INDICATIVA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -766,6 +825,7 @@
             <div class="note warn">Il calendario BLS per il 2027 non è ancora stato pubblicato (di norma esce nella seconda metà del 2026): nessuna data ufficiale disponibile. Ricontrolla su bls.gov o Forex Factory prima di impostare i bot.</div>
           </div>
           <div class="tags">
+            <span class="status-tag tbc">DA FISSARE</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -782,6 +842,7 @@
             <div class="meta"><span>14:00 ET → 20:00 IT decisione</span><span>14:30 ET → 20:30 IT conferenza Powell</span><span><code class="input-chip">InpNewsTime = 20:00</code></span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -804,6 +865,7 @@
             <div class="meta"><span>BCE 14:15 / 14:45 IT</span><span>BOE 12:00 UK → 13:00 IT</span></div>
           </div>
           <div class="tags">
+            <span class="status-tag confirmed">CONFERMATA</span>
             <span class="tag eur-gbp">EUR + GBP</span>
             <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>Medio</span>
           </div>
@@ -821,6 +883,7 @@
             <div class="note warn">Data proiettata (primo venerdì del mese), non ancora confermata dal BLS: verifica su Forex Factory il giorno prima.</div>
           </div>
           <div class="tags">
+            <span class="status-tag indicative">INDICATIVA</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
@@ -838,6 +901,7 @@
             <div class="note warn">Il calendario BLS per il 2027 non è ancora stato pubblicato: nessuna data ufficiale disponibile. Ricontrolla su bls.gov o Forex Factory prima di impostare i bot.</div>
           </div>
           <div class="tags">
+            <span class="status-tag tbc">DA FISSARE</span>
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
           </div>
