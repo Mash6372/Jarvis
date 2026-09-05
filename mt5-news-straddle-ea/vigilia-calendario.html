@@ -215,6 +215,10 @@
   .tag.eur{background:var(--accent-soft); color:var(--accent);}
   .tag.gbp{background:var(--low-soft); color:var(--low);}
   .tag.eur-gbp{background:var(--accent-soft); color:var(--accent);}
+  .tag.aud{background:var(--low-soft); color:var(--low);}
+  .tag.nzd{background:var(--low-soft); color:var(--low);}
+  .tag.cad{background:var(--accent2-soft); color:var(--accent2);}
+  .tag.chf{background:var(--med-soft); color:var(--med);}
   .gold-tag{display:flex; align-items:center; gap:6px; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--text-dim); white-space:nowrap;}
 
   table.ref{
@@ -280,6 +284,13 @@
     <p><strong>Regola pratica:</strong> per FOMC / BCE / BOE puoi fidarti delle date qui sotto. Per NFP e CPI, ricontrolla su Forex Factory o Investing.com nei giorni immediatamente precedenti, prima di scrivere l'orario in <code>InpNewsTime</code>.</p>
   </div>
 
+  <div class="callout" style="border-left-color:var(--accent2);">
+    <div class="t" style="color:var(--accent2);">Non solo USD/EUR/GBP — Aquila funziona su qualsiasi coppia</div>
+    <p><strong>Aquila non è limitato a EURUSD/GBPUSD:</strong> il bot legge sempre il simbolo del grafico su cui lo attacchi, quindi funziona identico su AUDNZD, USDCAD, NZDJPY o qualsiasi altra coppia — basta metterlo sul grafico giusto e impostare l'orario giusto.</p>
+    <p>Esempio concreto: il movimento violento su <strong>AUDNZD il 2 settembre alle 3 di notte</strong> che hai visto coincide quasi certamente con la <strong>RBNZ</strong> (banca centrale neozelandese), che quel giorno ha alzato i tassi al 2,75% — una sorpresa che ha fatto scattare il dollaro neozelandese. Da questa pagina in poi trovi anche RBA (Australia), RBNZ (Nuova Zelanda), BOC (Canada) e SNB (Svizzera): stessa logica di FOMC/BCE/BOE, semplicemente su altre valute.</p>
+    <p><strong>Come regolarti sulle cross (AUDNZD, AUDJPY, NZDCAD…):</strong> se la notizia riguarda solo una delle due valute, spesso conviene mettere Aquila sulla coppia di quella valuta contro il dollaro USA (es. AUDUSD per una notizia australiana), perché è la più liquida e con lo spread più basso. Usa la cross diretta (es. AUDNZD) solo se vuoi isolare il movimento relativo fra le due valute — attenzione però: se <em>entrambe</em> le valute della cross hanno notizie vicine nello stesso orario, il movimento può essere più imprevedibile perché somma due sorprese invece di una.</p>
+  </div>
+
   <section id="calendario">
     <h2>Calendario, settembre–dicembre 2026</h2>
     <p class="sub">Orari già convertiti in ora italiana. Ogni evento indica quale bot usare, su quale grafico, e il valore pronto per <code>InpNewsTime</code>. Fonti in fondo pagina.</p>
@@ -306,6 +317,10 @@
           <button class="filter-btn" data-cf="usd">USD</button>
           <button class="filter-btn" data-cf="eur">EUR</button>
           <button class="filter-btn" data-cf="gbp">GBP</button>
+          <button class="filter-btn" data-cf="aud">AUD</button>
+          <button class="filter-btn" data-cf="nzd">NZD</button>
+          <button class="filter-btn" data-cf="cad">CAD</button>
+          <button class="filter-btn" data-cf="chf">CHF</button>
         </div>
       </div>
     </div>
@@ -376,6 +391,38 @@
           </div>
         </div>
 
+        <div class="ev" data-cur="chf" data-bot="aquila">
+          <div class="date"><b>17</b>gio</div>
+          <div class="main">
+            <div class="name">SNB — valutazione politica monetaria (stimato)</div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> USDCHF</span>
+            </div>
+            <div class="meta"><span>~9:30 IT (Svizzera stesso fuso dell'Italia)</span></div>
+            <div class="note warn">Data stimata dal ritmo trimestrale SNB (mar/giu/set/dic), non ancora confermata dal sito snb.ch: verifica prima di impostare il bot.</div>
+          </div>
+          <div class="tags">
+            <span class="tag chf">CHF</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="aud" data-bot="aquila">
+          <div class="date"><b>28–29</b>lun–mar</div>
+          <div class="main">
+            <div class="name">Riunione RBA — decisione 29 settembre</div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> AUDUSD</span>
+            </div>
+            <div class="meta"><span>14:30 AEST → 6:30 IT</span><span>15:30 AEST → 7:30 IT conferenza</span><span><code class="input-chip">InpNewsTime = 06:30</code></span></div>
+            <div class="note warn">Orario antelucano in Italia: se non sei sveglio così presto, valuta se vale la pena impostarlo la sera prima.</div>
+          </div>
+          <div class="tags">
+            <span class="tag aud">AUD</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -416,6 +463,22 @@
           </div>
         </div>
 
+        <div class="ev" data-cur="nzd" data-bot="aquila">
+          <div class="date"><b>?</b>mer</div>
+          <div class="main">
+            <div class="name">RBNZ — decisione OCR (data esatta non confermata)</div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> NZDUSD</span>
+            </div>
+            <div class="meta"><span>tipicamente 14:00 NZT → 03:00 IT</span></div>
+            <div class="note warn">A inizio settembre gli analisti si aspettavano di più una pausa in ottobre e un rialzo a dicembre. Data del meeting non ancora reperita: verifica su rbnz.govt.nz prima di operare.</div>
+          </div>
+          <div class="tags">
+            <span class="tag nzd">NZD</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
+          </div>
+        </div>
+
         <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>27–28</b>mar–mer</div>
           <div class="main">
@@ -430,6 +493,22 @@
           <div class="tags">
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="cad" data-bot="aquila">
+          <div class="date"><b>28</b>mer</div>
+          <div class="main">
+            <div class="name">Bank of Canada — decisione tassi</div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> USDCAD</span>
+            </div>
+            <div class="meta"><span>9:45 ET → 14:45 IT</span><span><code class="input-chip">InpNewsTime = 14:45</code></span></div>
+            <div class="note warn">Stesso giorno della decisione FOMC (ore 19:00 IT): due eventi USD-collegati nella stessa giornata, occhio a non sovrapporre i bot sullo stesso conto senza controllo.</div>
+          </div>
+          <div class="tags">
+            <span class="tag cad">CAD</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
         </div>
 
@@ -454,6 +533,22 @@
     <div class="month-block">
       <div class="month-head"><h3>Novembre 2026</h3><div class="rule"></div></div>
       <div class="events">
+
+        <div class="ev" data-cur="aud" data-bot="aquila">
+          <div class="date"><b>2–3</b>lun–mar</div>
+          <div class="main">
+            <div class="name">Riunione RBA — decisione 3 novembre</div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> AUDUSD</span>
+            </div>
+            <div class="meta"><span>14:30 AEDT → 4:30 IT</span><span>15:30 AEDT → 5:30 IT conferenza</span><span><code class="input-chip">InpNewsTime = 04:30</code></span></div>
+            <div class="note warn">Dal 4 ottobre l'Australia (parti che osservano l'ora legale) passa ad AEDT: verifica sempre la differenza esatta vicino alla data.</div>
+          </div>
+          <div class="tags">
+            <span class="tag aud">AUD</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
+          </div>
+        </div>
 
         <div class="ev" data-cur="gbp" data-bot="aquila">
           <div class="date"><b>5</b>gio</div>
@@ -526,6 +621,21 @@
           </div>
         </div>
 
+        <div class="ev" data-cur="aud" data-bot="aquila">
+          <div class="date"><b>7–8</b>lun–mar</div>
+          <div class="main">
+            <div class="name">Riunione RBA — decisione 8 dicembre</div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> AUDUSD</span>
+            </div>
+            <div class="meta"><span>14:30 AEDT → 4:30 IT</span><span>15:30 AEDT → 5:30 IT conferenza</span><span><code class="input-chip">InpNewsTime = 04:30</code></span></div>
+          </div>
+          <div class="tags">
+            <span class="tag aud">AUD</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
+          </div>
+        </div>
+
         <div class="ev" data-cur="usd" data-bot="aurum aquila">
           <div class="date"><b>8–9</b>mar–mer</div>
           <div class="main">
@@ -539,6 +649,22 @@
           <div class="tags">
             <span class="tag usd">USD</span>
             <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="cad" data-bot="aquila">
+          <div class="date"><b>9</b>mer</div>
+          <div class="main">
+            <div class="name">Bank of Canada — decisione tassi</div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> USDCAD</span>
+            </div>
+            <div class="meta"><span>9:45 ET → 15:45 IT</span><span><code class="input-chip">InpNewsTime = 15:45</code></span></div>
+            <div class="note warn">Stesso giorno della decisione FOMC (20:00 IT): due eventi nella stessa giornata, orari diversi.</div>
+          </div>
+          <div class="tags">
+            <span class="tag cad">CAD</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
         </div>
 
@@ -570,6 +696,38 @@
           <div class="tags">
             <span class="tag eur-gbp">EUR + GBP</span>
             <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>Medio</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="chf" data-bot="aquila">
+          <div class="date"><b>17</b>gio</div>
+          <div class="main">
+            <div class="name">SNB — valutazione politica monetaria (stimato)</div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> USDCHF</span>
+            </div>
+            <div class="meta"><span>~9:30 IT (stesso fuso della Svizzera)</span></div>
+            <div class="note warn">Stessa data stimata di BCE e BOE: tre banche centrali lo stesso giorno se la stima è corretta. Data non confermata su snb.ch: verifica prima di operare.</div>
+          </div>
+          <div class="tags">
+            <span class="tag chf">CHF</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="nzd" data-bot="aquila">
+          <div class="date"><b>?</b>mer</div>
+          <div class="main">
+            <div class="name">RBNZ — decisione OCR (data esatta non confermata)</div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> NZDUSD</span>
+            </div>
+            <div class="meta"><span>tipicamente 14:00 NZT → 02:00 IT</span></div>
+            <div class="note warn">Gli analisti a inizio settembre indicavano dicembre come mese più probabile per un altro rialzo dei tassi. Data esatta non reperita: verifica su rbnz.govt.nz prima di operare. Nota: a dicembre la Nuova Zelanda è in NZDT (ora legale), quindi la differenza con l'Italia è di 12 ore, non 11.</div>
+          </div>
+          <div class="tags">
+            <span class="tag nzd">NZD</span>
+            <span class="gold-tag"><span class="impact"><i class="on low"></i><i></i><i></i></span>Basso</span>
           </div>
         </div>
 
@@ -678,6 +836,81 @@
       </table>
     </div>
     <p class="sub" style="margin-top:14px;">* Orario indicativo in ora italiana durante il periodo CEST/EDT (giugno–ottobre); verifica sempre la conversione esatta nel calendario economico, specialmente nelle settimane di cambio ora legale (fine marzo e fine ottobre — vedi l'avviso sul FOMC di ottobre nel calendario sopra). Il BOJ non pubblica un orario fisso di rilascio, quindi non è adatto alla logica "3 secondi prima" dei bot.</p>
+
+    <h3 style="font-size:19px; font-weight:500; margin-top:40px; margin-bottom:6px;">Le altre valute: AUD, NZD, CAD, CHF</h3>
+    <p class="sub">Muovono poco o nulla l'oro, ma su Aquila — attaccato alla coppia giusta — reagiscono esattamente come un FOMC o una BCE. Sono spesso pubblicati fuori dall'orario europeo classico: controlla sempre l'orario in ora italiana prima di impostare <code>InpNewsTime</code>.</p>
+    <div class="table-wrap">
+      <table class="ref">
+        <thead>
+          <tr>
+            <th>Evento</th>
+            <th>Valuta</th>
+            <th>Frequenza</th>
+            <th>Orario tipico (ora italiana)</th>
+            <th>Coppie consigliate</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="evname">RBA — decisione tassi</td>
+            <td>AUD</td>
+            <td class="num">8×/anno</td>
+            <td class="num">4:30–6:30 IT*</td>
+            <td>AUDUSD, AUDNZD, AUDJPY</td>
+          </tr>
+          <tr>
+            <td class="evname">Employment / CPI Australia</td>
+            <td>AUD</td>
+            <td class="num">mensile</td>
+            <td class="num">~2:30 IT*</td>
+            <td>AUDUSD, AUDNZD</td>
+          </tr>
+          <tr>
+            <td class="evname">RBNZ — decisione OCR</td>
+            <td>NZD</td>
+            <td class="num">7×/anno</td>
+            <td class="num">2:00–3:00 IT*</td>
+            <td>NZDUSD, AUDNZD, NZDJPY</td>
+          </tr>
+          <tr>
+            <td class="evname">CPI / Employment Nuova Zelanda</td>
+            <td>NZD</td>
+            <td class="num">trimestrale</td>
+            <td class="num">~23:45 IT (giorno prima)*</td>
+            <td>NZDUSD, AUDNZD</td>
+          </tr>
+          <tr>
+            <td class="evname">Bank of Canada — decisione tassi</td>
+            <td>CAD</td>
+            <td class="num">8×/anno</td>
+            <td class="num">14:45–15:45 IT*</td>
+            <td>USDCAD</td>
+          </tr>
+          <tr>
+            <td class="evname">Employment / CPI Canada</td>
+            <td>CAD</td>
+            <td class="num">mensile</td>
+            <td class="num">14:30 IT* (spesso lo stesso venerdì dell'NFP)</td>
+            <td>USDCAD</td>
+          </tr>
+          <tr>
+            <td class="evname">SNB — valutazione politica monetaria</td>
+            <td>CHF</td>
+            <td class="num">4×/anno</td>
+            <td class="num">~9:30 IT</td>
+            <td>USDCHF, EURCHF</td>
+          </tr>
+          <tr>
+            <td class="evname">CPI Svizzera</td>
+            <td>CHF</td>
+            <td class="num">mensile</td>
+            <td class="num">~8:30 IT</td>
+            <td>USDCHF</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="sub" style="margin-top:14px;">* AUD/NZD sono nell'emisfero australe: le loro ore legali sono <strong>invertite</strong> rispetto all'Italia (estate lì = inverno qui), quindi la differenza oraria cambia più volte l'anno e va sempre ricontrollata evento per evento, non solo due volte l'anno come per USD/EUR/GBP.</p>
   </section>
 
   <section id="uso">
