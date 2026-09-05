@@ -281,7 +281,8 @@
   <div class="callout">
     <div class="t">Prima di fidarti di una data</div>
     <p>Il calendario USA 2026 ha subito diversi <strong>rinvii</strong> per lo shutdown di governo: a gennaio l'NFP è slittato dall'8:30 ora abituale a un'uscita l'11 febbraio, ad aprile il dato è arrivato il secondo venerdì invece del primo, e a giugno è uscito di giovedì anziché di venerdì. Le riunioni di BCE, BOE e Fed (FOMC) sono invece calendarizzate con largo anticipo e cambiano di rado.</p>
-    <p><strong>Regola pratica:</strong> per FOMC / BCE / BOE puoi fidarti delle date qui sotto. Per NFP e CPI, ricontrolla su Forex Factory o Investing.com nei giorni immediatamente precedenti, prima di scrivere l'orario in <code>InpNewsTime</code>.</p>
+    <p><strong>Nuovo rischio da tenere d'occhio:</strong> i fondi federali USA scadono il <strong>30 settembre 2026</strong>. Se il Congresso non approva una proroga, un nuovo shutdown potrebbe far slittare l'NFP del 2 ottobre e i dati successivi, come già successo due volte nell'anno in corso.</p>
+    <p><strong>Regola pratica:</strong> per FOMC / BCE / BOE puoi fidarti delle date qui sotto. Per NFP e CPI, ricontrolla su Forex Factory o Investing.com nei giorni immediatamente precedenti, prima di scrivere l'orario in <code>InpNewsTime</code>. Per gennaio e febbraio 2027 il calendario BLS ufficiale non è ancora stato pubblicato: le date NFP sono proiezioni, quelle CPI sono ignote.</p>
   </div>
 
   <div class="callout" style="border-left-color:var(--accent2);">
@@ -292,7 +293,7 @@
   </div>
 
   <section id="calendario">
-    <h2>Calendario, settembre–dicembre 2026</h2>
+    <h2>Calendario, settembre 2026 – febbraio 2027</h2>
     <p class="sub">Orari già convertiti in ora italiana. Ogni evento indica quale bot usare, su quale grafico, e il valore pronto per <code>InpNewsTime</code>. Fonti in fondo pagina.</p>
 
     <div class="legend">
@@ -733,6 +734,119 @@
 
       </div>
     </div>
+
+    <div class="month-block">
+      <div class="month-head"><h3>Gennaio 2027</h3><div class="rule"></div></div>
+      <div class="events">
+
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
+          <div class="date"><b>8</b>ven</div>
+          <div class="main">
+            <div class="name">NFP — Non-Farm Payrolls (dato dicembre)</div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
+            <div class="note warn">Data proiettata (primo venerdì del mese): il calendario BLS 2027 non è ancora ufficiale e resta il rischio di un nuovo shutdown dopo la scadenza fondi del 30 settembre 2026. Verifica su Forex Factory il giorno prima.</div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
+          <div class="date"><b>?</b>—</div>
+          <div class="main">
+            <div class="name">CPI USA (dato dicembre)</div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>tipicamente 8:30 ET → 14:30 IT</span></div>
+            <div class="note warn">Il calendario BLS per il 2027 non è ancora stato pubblicato (di norma esce nella seconda metà del 2026): nessuna data ufficiale disponibile. Ricontrolla su bls.gov o Forex Factory prima di impostare i bot.</div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
+          <div class="date"><b>26–27</b>mar–mer</div>
+          <div class="main">
+            <div class="name">Riunione FOMC — decisione 27 gennaio</div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>14:00 ET → 20:00 IT decisione</span><span>14:30 ET → 20:30 IT conferenza Powell</span><span><code class="input-chip">InpNewsTime = 20:00</code></span></div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="month-block">
+      <div class="month-head"><h3>Febbraio 2027</h3><div class="rule"></div></div>
+      <div class="events">
+
+        <div class="ev" data-cur="eur gbp" data-bot="aquila">
+          <div class="date"><b>4</b>gio</div>
+          <div class="main">
+            <div class="name">Decisione BCE <em>e</em> decisione BOE — stesso giorno</div>
+            <div class="bot-badges">
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD o GBPUSD</span>
+            </div>
+            <div class="meta"><span>BCE 14:15 / 14:45 IT</span><span>BOE 12:00 UK → 13:00 IT</span></div>
+          </div>
+          <div class="tags">
+            <span class="tag eur-gbp">EUR + GBP</span>
+            <span class="gold-tag"><span class="impact"><i class="on med"></i><i class="on med"></i><i></i></span>Medio</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
+          <div class="date"><b>5</b>ven</div>
+          <div class="main">
+            <div class="name">NFP — Non-Farm Payrolls (dato gennaio)</div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>8:30 ET → 14:30 IT</span><span><code class="input-chip">InpNewsTime = 14:30</code></span></div>
+            <div class="note warn">Data proiettata (primo venerdì del mese), non ancora confermata dal BLS: verifica su Forex Factory il giorno prima.</div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
+          </div>
+        </div>
+
+        <div class="ev" data-cur="usd" data-bot="aurum aquila">
+          <div class="date"><b>?</b>—</div>
+          <div class="main">
+            <div class="name">CPI USA (dato gennaio)</div>
+            <div class="bot-badges">
+              <span class="bot-badge aurum">🥇 Aurum <span class="arrow">→</span> XAUUSD</span>
+              <span class="bot-badge aquila">🦅 Aquila <span class="arrow">→</span> EURUSD</span>
+            </div>
+            <div class="meta"><span>tipicamente 8:30 ET → 14:30 IT</span></div>
+            <div class="note warn">Il calendario BLS per il 2027 non è ancora stato pubblicato: nessuna data ufficiale disponibile. Ricontrolla su bls.gov o Forex Factory prima di impostare i bot.</div>
+          </div>
+          <div class="tags">
+            <span class="tag usd">USD</span>
+            <span class="gold-tag"><span class="impact"><i class="on high"></i><i class="on high"></i><i class="on high"></i></span>Alto</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </section>
 
   <section id="guida">
@@ -936,13 +1050,17 @@
   </section>
 
   <footer>
-    <div>Pagina di riferimento generata il 4 settembre 2026. Le date FOMC/BCE/BOE derivano dai calendari ufficiali delle rispettive banche centrali; le date NFP/CPI da fonti secondarie e sono più soggette a rinvio — <strong>verifica sempre prima di operare</strong>. Nessuna delle informazioni qui contenute è un consiglio di investimento.</div>
+    <div>Pagina di riferimento generata il 5 settembre 2026. Le date FOMC/BCE/BOE/RBA/BOC derivano dai calendari ufficiali delle rispettive banche centrali; le date NFP/CPI da fonti secondarie e sono più soggette a rinvio; le date RBNZ e SNB per ottobre–dicembre sono stime non confermate — <strong>verifica sempre prima di operare</strong>. Nessuna delle informazioni qui contenute è un consiglio di investimento.</div>
     <div class="sources">
       <span>Fonti:</span>
       <a href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" target="_blank" rel="noopener">Federal Reserve — calendario FOMC</a>
       <a href="https://www.ecb.europa.eu/press/calendars/mgcgc/html/index.en.html" target="_blank" rel="noopener">BCE — calendario Governing Council</a>
       <a href="https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates" target="_blank" rel="noopener">Bank of England — date MPC</a>
       <a href="https://www.bls.gov/schedule/news_release/empsit.htm" target="_blank" rel="noopener">BLS — Employment Situation</a>
+      <a href="https://www.rba.gov.au/schedules-events/calendar/" target="_blank" rel="noopener">Reserve Bank of Australia — calendario</a>
+      <a href="https://www.rbnz.govt.nz/monetary-policy/monetary-policy-decisions" target="_blank" rel="noopener">RBNZ — decisioni di politica monetaria</a>
+      <a href="https://www.bankofcanada.ca/" target="_blank" rel="noopener">Bank of Canada</a>
+      <a href="https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/decisions" target="_blank" rel="noopener">Swiss National Bank — decisioni</a>
     </div>
   </footer>
 
