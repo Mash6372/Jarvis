@@ -1,0 +1,16 @@
+{
+  "name": "logistica-app",
+  "version": "1.0.0",
+  "description": "Gestione e ottimizzazione giri di ritiro casse dalle ecostazioni e conferimento agli impianti",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
