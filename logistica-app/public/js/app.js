@@ -61,6 +61,7 @@ document.getElementById('tabs').addEventListener('click', (e) => {
 
 function caricaTab(nome) {
   if (nome === 'dashboard') caricaDashboard();
+  if (nome === 'mappa') caricaMappa();
   if (nome === 'giri') caricaGiri();
   if (nome === 'ecostazioni') caricaEcostazioni();
   if (nome === 'impianti') caricaImpianti();
@@ -106,6 +107,67 @@ function barreDa(righe, campo) {
     )
     .join('');
 }
+
+// ---------- Mappa operativa ----------
+
+let mappaGrande = null;
+let livelloEcoMappa = null;
+let livelloImpMappa = null;
+let livelloGiroMappa = null;
+
+async function caricaMappa() {
+  if (!mappaGrande) {
+    mappaGrande = creaMappaBase('mappa-grande');
+  } else {
+    setTimeout(() => mappaGrande.invalidateSize(), 50);
+  }
+
+  const [ecostazioni, impianti, giri] = await Promise.all([
+    api('GET', '/api/ecostazioni'),
+    api('GET', '/api/impianti'),
+    api('GET', '/api/giri'),
+  ]);
+
+  if (livelloEcoMappa) mappaGrande.removeLayer(livelloEcoMappa);
+  if (livelloImpMappa) mappaGrande.removeLayer(livelloImpMappa);
+
+  livelloEcoMappa = L.layerGroup(ecostazioni.map(markerEcostazione).filter(Boolean));
+  livelloImpMappa = L.layerGroup(impianti.map(markerImpianto).filter(Boolean));
+  if (document.getElementById('mappa-mostra-eco').checked) livelloEcoMappa.addTo(mappaGrande);
+  if (document.getElementById('mappa-mostra-imp').checked) livelloImpMappa.addTo(mappaGrande);
+
+  const senzaCoord = ecostazioni.filter((e) => e.lat == null || e.lon == null).length + impianti.filter((i) => i.lat == null || i.lon == null).length;
+  if (senzaCoord > 0) {
+    mostraToast(`${senzaCoord} punto/i senza coordinate non compaiono sulla mappa`);
+  }
+
+  const select = document.getElementById('mappa-giro-select');
+  const valorePrecedente = select.value;
+  select.innerHTML =
+    '<option value="">Solo punti (nessun giro sovrapposto)</option>' +
+    giri.map((g) => `<option value="${g.id}">Giro del ${formatoData(g.data)}${g.mezzo_nome ? ' — ' + escapeHtml(g.mezzo_nome) : ''}</option>`).join('');
+  select.value = valorePrecedente;
+}
+
+document.getElementById('mappa-mostra-eco').addEventListener('change', (e) => {
+  if (!mappaGrande || !livelloEcoMappa) return;
+  if (e.target.checked) livelloEcoMappa.addTo(mappaGrande);
+  else mappaGrande.removeLayer(livelloEcoMappa);
+});
+document.getElementById('mappa-mostra-imp').addEventListener('change', (e) => {
+  if (!mappaGrande || !livelloImpMappa) return;
+  if (e.target.checked) livelloImpMappa.addTo(mappaGrande);
+  else mappaGrande.removeLayer(livelloImpMappa);
+});
+document.getElementById('mappa-giro-select').addEventListener('change', async (e) => {
+  if (livelloGiroMappa) {
+    mappaGrande.removeLayer(livelloGiroMappa);
+    livelloGiroMappa = null;
+  }
+  if (!e.target.value) return;
+  const giro = await api('GET', `/api/giri/${e.target.value}`);
+  livelloGiroMappa = disegnaPercorsoGiro(mappaGrande, giro.tappe);
+});
 
 // ---------- Mezzi ----------
 
@@ -211,6 +273,10 @@ function formEcostazione(e) {
       <div class="form-row"><label>Longitudine</label><input id="f-lon" type="number" step="0.000001" value="${e.lon ?? ''}" /></div>
     </div>
     <div class="form-row">
+      <label>Oppure clicca sulla mappa per impostare le coordinate</label>
+      <div id="mappa-picker-eco" class="mappa-picker"></div>
+    </div>
+    <div class="form-row">
       <label>Lato cerniera del coperchio richiesto dalle casse in questa ecostazione *</label>
       <select id="f-lato">
         <option value="dx" ${e.lato_cerniera_richiesto === 'dx' ? 'selected' : ''}>Destra</option>
@@ -229,10 +295,14 @@ function formEcostazione(e) {
     </div>`;
 }
 
-function nuovaEcostazione() { apriModal(formEcostazione()); }
+function nuovaEcostazione() {
+  apriModal(formEcostazione());
+  setTimeout(() => collegaSelettoreCoordinate('mappa-picker-eco', 'f-lat', 'f-lon', null, null), 0);
+}
 async function modificaEcostazione(id) {
   const e = await api('GET', `/api/ecostazioni/${id}`);
   apriModal(formEcostazione(e));
+  setTimeout(() => collegaSelettoreCoordinate('mappa-picker-eco', 'f-lat', 'f-lon', e.lat, e.lon), 0);
 }
 async function salvaEcostazione(id) {
   const corpo = {
@@ -299,6 +369,10 @@ function formImpianto(i) {
       <div class="form-row"><label>Latitudine</label><input id="f-lat" type="number" step="0.000001" value="${i.lat ?? ''}" /></div>
       <div class="form-row"><label>Longitudine</label><input id="f-lon" type="number" step="0.000001" value="${i.lon ?? ''}" /></div>
     </div>
+    <div class="form-row">
+      <label>Oppure clicca sulla mappa per impostare le coordinate</label>
+      <div id="mappa-picker-imp" class="mappa-picker"></div>
+    </div>
     <div class="form-grid-2">
       <div class="form-row"><label>Referente</label><input id="f-referente" value="${escapeHtml(i.referente)}" /></div>
       <div class="form-row"><label>Telefono</label><input id="f-telefono" value="${escapeHtml(i.telefono)}" /></div>
@@ -314,10 +388,14 @@ function formImpianto(i) {
     </div>`;
 }
 
-function nuovoImpianto() { apriModal(formImpianto()); }
+function nuovoImpianto() {
+  apriModal(formImpianto());
+  setTimeout(() => collegaSelettoreCoordinate('mappa-picker-imp', 'f-lat', 'f-lon', null, null), 0);
+}
 async function modificaImpianto(id) {
   const i = await api('GET', `/api/impianti/${id}`);
   apriModal(formImpianto(i));
+  setTimeout(() => collegaSelettoreCoordinate('mappa-picker-imp', 'f-lat', 'f-lon', i.lat, i.lon), 0);
 }
 async function salvaImpianto(id) {
   const cerRighe = document
@@ -543,6 +621,17 @@ async function apriGiro(id) {
   await renderGiro();
 }
 
+let mappaGiroDettaglio = null;
+function disegnaMappaGiroDettaglio(tappe) {
+  if (mappaGiroDettaglio) {
+    mappaGiroDettaglio.remove();
+    mappaGiroDettaglio = null;
+  }
+  mappaGiroDettaglio = creaMappaBase('mappa-giro');
+  disegnaPercorsoGiro(mappaGiroDettaglio, tappe);
+  setTimeout(() => mappaGiroDettaglio && mappaGiroDettaglio.invalidateSize(), 50);
+}
+
 async function renderGiro() {
   const giro = await api('GET', `/api/giri/${giroCorrenteId}`);
   document.getElementById('giro-titolo').textContent = `Giro del ${formatoData(giro.data)}`;
@@ -567,6 +656,8 @@ async function renderGiro() {
     <div class="kpi"><div class="num">${riepilogo.casse_vuote_scambiate_direttamente}</div><div class="lbl">scambi diretti</div></div>
   `;
 
+  disegnaMappaGiroDettaglio(giro.tappe);
+
   document.getElementById('lista-tappe').innerHTML =
     giro.tappe
       .map((t, idx) => {
@@ -589,7 +680,7 @@ async function renderGiro() {
               <button class="btn small danger" onclick="eliminaTappa(${t.id})">✕</button>
             </div>
           </div>
-          <div class="tappa-meta">${distanza || 'Distanza non calcolabile (coordinate mancanti)'}</div>
+          <div class="tappa-meta">${distanza || (idx === 0 ? 'Prima tappa del giro' : 'Distanza non calcolabile (coordinate mancanti)')}</div>
           <div class="tappa-casse">
             ${t.casse.map((c) => `<span class="cassa-chip">${escapeHtml(c.codice)} <span class="badge ${c.lato_cerniera}">${c.lato_cerniera}</span> · ${c.azione.replace('_', ' ')}</span>`).join('') || '<span class="tappa-meta">Nessun movimento cassa registrato</span>'}
           </div>

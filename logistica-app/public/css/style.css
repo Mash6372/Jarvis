@@ -253,3 +253,47 @@ table.data-table tbody tr:hover { background: #f8fafc; }
 .toast.errore { background: #b3261e; }
 
 .empty-state { color: var(--testo-lieve); font-style: italic; padding: 20px 0; text-align: center; }
+
+/* Mappa */
+.mappa-grande {
+  height: 65vh;
+  min-height: 420px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  margin-bottom: 12px;
+}
+.mappa-giro {
+  height: 340px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--grigio-bordo);
+}
+.mappa-picker {
+  height: 220px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--grigio-bordo);
+  margin-top: 4px;
+}
+.mappa-legenda { display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.85rem; color: var(--testo-lieve); }
+.legenda-voce { display: inline-flex; align-items: center; gap: 6px; }
+.pallino { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 2px solid white; box-shadow: 0 0 0 1px #ccc; }
+.pin-mini { width: 12px; height: 16px; display: inline-block; background: #2a81cb; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+
+.pin-numero {
+  color: white;
+  font-weight: 700;
+  font-size: 0.78rem;
+  width: 26px;
+  height: 26px;
+  border-radius: 50% 50% 50% 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(45deg);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  border: 2px solid white;
+}
+.pin-numero > * { transform: rotate(-45deg); }
+.icona-tappa { background: transparent; border: none; }

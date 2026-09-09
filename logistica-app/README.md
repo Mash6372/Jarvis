@@ -80,10 +80,27 @@ l'ordine delle tappe.
 
 Gli **impianti di destinazione** (CARTAMACERO, INNOVA ECOSERVIZI,
 ZAFONTE ECOLOGY, Ecocentro SIA - Grosso, LEIVO, ACEA Pinerolese, ecc.) sono
-già caricati con i relativi codici CER. **Ecostazioni, casse e mezzi vanno
-inseriti da te** (manualmente o via import CSV), perché solo tu conosci con
-certezza il lato della cerniera di ogni cassa/ecostazione — un dato
-sbagliato qui porterebbe a scambi errati sul campo.
+già caricati con i relativi codici CER e con coordinate **a livello di
+comune** (per poterli vedere subito sulla mappa): se ti serve la posizione
+precisa dell'impianto, aprilo dalla scheda Impianti e clicca sul punto
+esatto nella mini-mappa del modulo di modifica. **Ecostazioni, casse e
+mezzi vanno inseriti da te** (manualmente o via import CSV), perché solo tu
+conosci con certezza il lato della cerniera di ogni cassa/ecostazione — un
+dato sbagliato qui porterebbe a scambi errati sul campo.
+
+## Mappa operativa
+
+La scheda **Mappa** mostra tutte le ecostazioni (pallini blu = cerniera a
+destra, arancioni = cerniera a sinistra) e tutti gli impianti (segnaposto),
+con popup che riportano lato cerniera richiesto, scadenze di ritiro, CER
+accettati e contatti. Il menu a tendina in alto permette di sovrapporre il
+percorso di un giro specifico (tappe numerate in ordine, collegate da una
+linea). La stessa mappa, centrata sul singolo giro, compare anche aprendo
+il dettaglio di un giro nella scheda **Giri**.
+
+Nei moduli di modifica di ecostazioni e impianti puoi impostare le
+coordinate anche cliccando direttamente sulla mini-mappa, invece di
+copiarle a mano da Google Maps.
 
 ## Note tecniche
 
