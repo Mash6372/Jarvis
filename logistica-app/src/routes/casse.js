@@ -13,7 +13,7 @@ function validaPosizioneTipo(tipo) {
   return ['ecostazione', 'impianto', 'mezzo', 'ignota'].includes(tipo);
 }
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const { stato, lato_cerniera, posizione_tipo, posizione_id } = req.query;
   const clausole = [];
   const params = [];
@@ -34,17 +34,17 @@ router.get('/', (req, res) => {
     params.push(posizione_id);
   }
   const where = clausole.length ? `WHERE ${clausole.join(' AND ')}` : '';
-  const rows = db.prepare(`SELECT * FROM casse ${where} ORDER BY codice`).all(...params);
+  const rows = await db.prepare(`SELECT * FROM casse ${where} ORDER BY codice`).all(...params);
   res.json(rows);
 });
 
-router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM casse WHERE id = ?').get(req.params.id);
+router.get('/:id', async (req, res) => {
+  const row = await db.prepare('SELECT * FROM casse WHERE id = ?').get(req.params.id);
   if (!row) return res.status(404).json({ errore: 'Cassa non trovata' });
   res.json(row);
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { codice, lato_cerniera, stato, cer_code, posizione_tipo, posizione_id, note } = req.body;
   if (!codice) return res.status(400).json({ errore: 'Il codice della cassa è obbligatorio' });
   if (!validaLato(lato_cerniera)) return res.status(400).json({ errore: 'lato_cerniera deve essere "sx" o "dx"' });
@@ -53,23 +53,23 @@ router.post('/', (req, res) => {
   const posTipo = posizione_tipo || 'ignota';
   if (!validaPosizioneTipo(posTipo)) return res.status(400).json({ errore: 'posizione_tipo non valido' });
   try {
-    const info = db
+    const info = await db
       .prepare(
         `INSERT INTO casse (codice, lato_cerniera, stato, cer_code, posizione_tipo, posizione_id, note)
          VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
       .run(codice, lato_cerniera, statoFinale, cer_code || null, posTipo, posizione_id ?? null, note || null);
-    res.status(201).json(db.prepare('SELECT * FROM casse WHERE id = ?').get(info.lastInsertRowid));
+    res.status(201).json(await db.prepare('SELECT * FROM casse WHERE id = ?').get(info.lastInsertRowid));
   } catch (err) {
-    if (String(err.message).includes('UNIQUE')) {
+    if (err.code === '23505' || String(err.message).includes('duplicate key')) {
       return res.status(409).json({ errore: `Esiste già una cassa con codice ${codice}` });
     }
     throw err;
   }
 });
 
-router.put('/:id', (req, res) => {
-  const existing = db.prepare('SELECT * FROM casse WHERE id = ?').get(req.params.id);
+router.put('/:id', async (req, res) => {
+  const existing = await db.prepare('SELECT * FROM casse WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ errore: 'Cassa non trovata' });
   const { codice, lato_cerniera, stato, cer_code, posizione_tipo, posizione_id, note } = req.body;
   const lato = lato_cerniera ?? existing.lato_cerniera;
@@ -78,24 +78,26 @@ router.put('/:id', (req, res) => {
   if (!validaStato(statoFinale)) return res.status(400).json({ errore: 'stato non valido' });
   const posTipo = posizione_tipo ?? existing.posizione_tipo;
   if (!validaPosizioneTipo(posTipo)) return res.status(400).json({ errore: 'posizione_tipo non valido' });
-  db.prepare(
-    `UPDATE casse SET codice = ?, lato_cerniera = ?, stato = ?, cer_code = ?,
-     posizione_tipo = ?, posizione_id = ?, note = ?, aggiornato_il = CURRENT_TIMESTAMP WHERE id = ?`
-  ).run(
-    codice ?? existing.codice,
-    lato,
-    statoFinale,
-    cer_code ?? existing.cer_code,
-    posTipo,
-    posizione_id ?? existing.posizione_id,
-    note ?? existing.note,
-    req.params.id
-  );
-  res.json(db.prepare('SELECT * FROM casse WHERE id = ?').get(req.params.id));
+  await db
+    .prepare(
+      `UPDATE casse SET codice = ?, lato_cerniera = ?, stato = ?, cer_code = ?,
+     posizione_tipo = ?, posizione_id = ?, note = ?, aggiornato_il = to_char(now(), 'YYYY-MM-DD HH24:MI:SS') WHERE id = ?`
+    )
+    .run(
+      codice ?? existing.codice,
+      lato,
+      statoFinale,
+      cer_code ?? existing.cer_code,
+      posTipo,
+      posizione_id ?? existing.posizione_id,
+      note ?? existing.note,
+      req.params.id
+    );
+  res.json(await db.prepare('SELECT * FROM casse WHERE id = ?').get(req.params.id));
 });
 
-router.delete('/:id', (req, res) => {
-  db.prepare('DELETE FROM casse WHERE id = ?').run(req.params.id);
+router.delete('/:id', async (req, res) => {
+  await db.prepare('DELETE FROM casse WHERE id = ?').run(req.params.id);
   res.status(204).end();
 });
 

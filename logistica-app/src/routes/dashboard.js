@@ -3,26 +3,26 @@ const db = require('../db');
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const conteggi = {
-    ecostazioni: db.prepare('SELECT COUNT(*) AS n FROM ecostazioni').get().n,
-    impianti: db.prepare('SELECT COUNT(*) AS n FROM impianti').get().n,
-    mezzi: db.prepare('SELECT COUNT(*) AS n FROM mezzi').get().n,
-    casse: db.prepare('SELECT COUNT(*) AS n FROM casse').get().n,
-    giri: db.prepare('SELECT COUNT(*) AS n FROM giri').get().n,
+    ecostazioni: (await db.prepare('SELECT COUNT(*)::int AS n FROM ecostazioni').get()).n,
+    impianti: (await db.prepare('SELECT COUNT(*)::int AS n FROM impianti').get()).n,
+    mezzi: (await db.prepare('SELECT COUNT(*)::int AS n FROM mezzi').get()).n,
+    casse: (await db.prepare('SELECT COUNT(*)::int AS n FROM casse').get()).n,
+    giri: (await db.prepare('SELECT COUNT(*)::int AS n FROM giri').get()).n,
   };
 
-  const casseStato = db.prepare('SELECT stato, COUNT(*) AS n FROM casse GROUP BY stato').all();
-  const casseLato = db.prepare('SELECT lato_cerniera, COUNT(*) AS n FROM casse GROUP BY lato_cerniera').all();
+  const casseStato = await db.prepare('SELECT stato, COUNT(*)::int AS n FROM casse GROUP BY stato').all();
+  const casseLato = await db.prepare('SELECT lato_cerniera, COUNT(*)::int AS n FROM casse GROUP BY lato_cerniera').all();
 
-  const tappe = db.prepare('SELECT km_dalla_precedente, minuti_dalla_precedente, minuti_sosta FROM tappe').all();
-  const kmTotaliStorico = tappe.reduce((s, t) => s + (t.km_dalla_precedente || 0), 0);
+  const tappe = await db.prepare('SELECT km_dalla_precedente, minuti_dalla_precedente, minuti_sosta FROM tappe').all();
+  const kmTotaliStorico = tappe.reduce((s, t) => s + (Number(t.km_dalla_precedente) || 0), 0);
   const minutiTotaliStorico = tappe.reduce(
-    (s, t) => s + (t.minuti_dalla_precedente || 0) + (t.minuti_sosta || 0),
+    (s, t) => s + (Number(t.minuti_dalla_precedente) || 0) + (Number(t.minuti_sosta) || 0),
     0
   );
 
-  const scambi = db.prepare("SELECT COUNT(*) AS n FROM tappe_casse WHERE azione = 'carica_vuota'").get().n;
+  const scambi = (await db.prepare("SELECT COUNT(*)::int AS n FROM tappe_casse WHERE azione = 'carica_vuota'").get()).n;
 
   res.json({
     conteggi,

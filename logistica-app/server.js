@@ -1,9 +1,9 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('node:path');
 const db = require('./src/db');
 const { seedSeVuoto } = require('./src/seed');
-
-seedSeVuoto(db);
 
 const app = express();
 app.use(express.json());
@@ -23,6 +23,16 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Logistica app in ascolto su http://localhost:${PORT}`);
+
+async function avvia() {
+  await db.ready;
+  await seedSeVuoto(db);
+  app.listen(PORT, () => {
+    console.log(`Logistica app in ascolto su http://localhost:${PORT}`);
+  });
+}
+
+avvia().catch((err) => {
+  console.error("Errore all'avvio del server:", err);
+  process.exit(1);
 });

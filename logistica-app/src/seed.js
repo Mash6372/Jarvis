@@ -140,20 +140,19 @@ const IMPIANTI = [
   },
 ];
 
-function seedSeVuoto(db) {
-  const { count } = db.prepare('SELECT COUNT(*) AS count FROM impianti').get();
+async function seedSeVuoto(db) {
+  const { count } = await db.prepare('SELECT COUNT(*)::int AS count FROM impianti').get();
   if (count > 0) return;
 
-  const inserisciImpianto = db.prepare(
-    'INSERT INTO impianti (nome, comune, indirizzo, lat, lon, referente, telefono) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  );
-  const inserisciCer = db.prepare(
-    'INSERT INTO impianti_cer (impianto_id, cer_code, descrizione, principale) VALUES (?, ?, ?, ?)'
-  );
-
-  const inserisciTutto = db.transaction(() => {
-    IMPIANTI.forEach((impianto) => {
-      const info = inserisciImpianto.run(
+  const inserisciTutto = db.transaction(async (scopedDb) => {
+    const inserisciImpianto = scopedDb.prepare(
+      'INSERT INTO impianti (nome, comune, indirizzo, lat, lon, referente, telefono) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    );
+    const inserisciCer = scopedDb.prepare(
+      'INSERT INTO impianti_cer (impianto_id, cer_code, descrizione, principale) VALUES (?, ?, ?, ?)'
+    );
+    for (const impianto of IMPIANTI) {
+      const info = await inserisciImpianto.run(
         impianto.nome,
         impianto.comune,
         impianto.indirizzo,
@@ -162,12 +161,12 @@ function seedSeVuoto(db) {
         impianto.referente,
         impianto.telefono
       );
-      impianto.cer.forEach((voce) => {
-        inserisciCer.run(info.lastInsertRowid, voce.cer_code, voce.descrizione, voce.principale ? 1 : 0);
-      });
-    });
+      for (const voce of impianto.cer) {
+        await inserisciCer.run(info.lastInsertRowid, voce.cer_code, voce.descrizione, voce.principale ? 1 : 0);
+      }
+    }
   });
-  inserisciTutto();
+  await inserisciTutto();
   console.log(`Precaricati ${IMPIANTI.length} impianti di destinazione (dati SIA s.r.l.).`);
 }
 

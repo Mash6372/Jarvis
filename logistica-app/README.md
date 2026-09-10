@@ -6,23 +6,22 @@ SIA s.r.l. (Valli di Lanzo) verso gli impianti di scarico, tenendo conto del
 scambiare direttamente con una cassa vuota compatibile all'impianto, senza
 doverla riportare indietro vuota per un secondo giro.
 
-## Avvio rapido
+## Avvio rapido (in locale)
 
-Serve Node.js 22.5 o superiore (usa il modulo integrato `node:sqlite`,
-nessun database esterno da installare).
+Serve Node.js 22 o superiore e un database Postgres — anche gratuito (vedi
+sotto "Metterla online gratis" per crearne uno in due minuti su Neon).
 
 ```bash
 cd logistica-app
 npm install
+cp .env.example .env   # poi modifica .env con la tua stringa di connessione Postgres
 npm start
 ```
 
-L'app sarà disponibile su **http://localhost:3000**.
-
-Il database (SQLite) viene creato automaticamente in `data/logistica.db` al
-primo avvio. Al primo avvio vengono precaricati gli **11 impianti di
-destinazione reali** (con relativi codici CER, indirizzi e referenti) forniti
-da SIA s.r.l. — vedi `src/seed.js`.
+L'app sarà disponibile su **http://localhost:3000**. Al primo avvio crea da
+sola le tabelle nel database e precarica gli **11 impianti di destinazione
+reali** (con relativi codici CER, indirizzi e referenti) forniti da SIA
+s.r.l. — vedi `src/seed.js`.
 
 ## Come è organizzata l'app
 
@@ -102,15 +101,57 @@ Nei moduli di modifica di ecostazioni e impianti puoi impostare le
 coordinate anche cliccando direttamente sulla mini-mappa, invece di
 copiarle a mano da Google Maps.
 
+## Metterla online gratis (link stabile, nessuna installazione)
+
+Per avere un link tuo, sempre raggiungibile da PC/telefono/tablet, senza
+installare nulla sui dispositivi che la usano, servono due pezzi **entrambi
+gratuiti**: un database Postgres (Neon) e un hosting per l'app (Render).
+
+### 1. Crea il database gratuito su Neon
+
+1. Vai su [neon.tech](https://neon.tech) e registrati (bottone "Sign up",
+   puoi usare l'account Google/GitHub).
+2. Crea un nuovo progetto (basta dargli un nome, es. "logistica").
+3. Nella dashboard del progetto trovi la **Connection string**: un testo
+   che inizia con `postgresql://...`. Copiala: è la tua `DATABASE_URL`.
+   Il piano gratuito di Neon include un database sempre attivo e persistente
+   (i dati non si perdono mai), abbondante per questo uso.
+
+### 2. Metti il codice online e collega Render
+
+1. Vai su [render.com](https://render.com) e registrati.
+2. Dashboard → **New → Web Service**.
+3. Collega il tuo account GitHub e seleziona il repository `Jarvis`,
+   branch `claude/happy-lamport-gb94f8` (o il branch su cui è stata
+   unita questa app).
+4. Imposta:
+   - **Root Directory**: `logistica-app`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+   - **Instance Type**: Free
+5. In **Environment Variables** aggiungi:
+   - `DATABASE_URL` = la stringa copiata da Neon al passo precedente
+6. Clicca **Create Web Service**. Dopo qualche minuto Render ti dà un link
+   pubblico tipo `https://logistica-nova-era.onrender.com` — quello è il
+   link fisso da aprire da qualunque dispositivo.
+
+**Nota sul piano gratuito di Render**: se l'app resta inutilizzata per un
+po' "si addormenta" e la prima richiesta successiva impiega 30-60 secondi
+per ripartire (le successive sono normali). I dati non vengono mai persi
+perché vivono su Neon, non su Render. Se in futuro questo tempo di risveglio
+diventa un problema, si risolve passando al piano a pagamento di Render
+(pochi euro al mese) senza toccare il codice.
+
 ## Note tecniche
 
-- Nessuna dipendenza da servizi esterni: funziona anche senza connessione
-  internet una volta avviato (utile se lo usi da un PC in ufficio o in
-  deposito).
+- Il database è Postgres (compatibile con qualunque provider, non solo
+  Neon): la connessione si configura con la variabile d'ambiente
+  `DATABASE_URL`, letta da un file `.env` in locale (vedi `.env.example`)
+  o impostata nel pannello dell'hosting in produzione.
 - Il calcolo di km/tempo tra due tappe usa la distanza in linea d'aria
   corretta con un fattore 1.35 (per tenere conto delle strade di montagna
   delle Valli di Lanzo) e una velocità media stimata di 35 km/h: sono valori
   indicativi, modificabili in `src/routes/giri.js` se vuoi tararli meglio
   sui tuoi percorsi reali.
-- Il database è un unico file SQLite (`data/logistica.db`): per fare un
-  backup basta copiare quel file.
+- Per un backup dei dati: dal pannello Neon puoi esportare il database, o
+  usare `pg_dump` con la tua `DATABASE_URL`.
