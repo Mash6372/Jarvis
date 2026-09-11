@@ -43,7 +43,7 @@
 //|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "1.06"
+#property version   "1.07"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -99,8 +99,8 @@ input int    InpPanelWidth            = 360; // Larghezza pannello in pixel (all
 #define PANEL_LINE_H  16
 #define PANEL_FONT    8
 
-// Palette "Vexillum" (bronzo/pergamena su ossidiana) per la dashboard
-#define CLR_PANEL_BG    C'36,19,16'
+// Palette "Vexillum" (bronzo/pergamena su nero) per la dashboard
+#define CLR_PANEL_BG    C'0,0,0'
 #define CLR_PANEL_EDGE  C'201,162,75'
 #define CLR_GOLD        C'224,168,50'
 #define CLR_PARCHMENT   C'226,211,180'
