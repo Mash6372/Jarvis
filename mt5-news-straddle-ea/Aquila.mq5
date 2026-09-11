@@ -8,10 +8,13 @@
 //|  (InpNewsTime). L'EA fa tutto da solo:                            |
 //|   1) osserva le candele M5 nei 10 minuti precedenti l'orario,     |
 //|      aggiornando in tempo reale massimo e minimo;                 |
-//|   2) 3 secondi prima dell'orario congela il range e piazza due    |
-//|      ordini pendenti in OCO:                                      |
+//|   2) a 1 minuto dall'orario piazza due ordini pendenti in OCO:     |
 //|        - Buy Stop = massimo range + X pips                        |
 //|        - Sell Stop = minimo range - X pips                        |
+//|      e continua a SPOSTARLI (non li ricrea, li modifica) seguendo |
+//|      il range che si allarga, finche' non arriva a 3 secondi      |
+//|      dall'orario: da li' in poi il range e i livelli restano      |
+//|      fermi (congelati) fino all'esecuzione o alla scadenza;       |
 //|   3) quando uno dei due scatta, cancella l'altro;                 |
 //|   4) se nessuno dei due scatta entro 15 minuti, li cancella       |
 //|      entrambi;                                                    |
@@ -24,7 +27,7 @@
 //|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "5.01"
+#property version   "5.02"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -54,10 +57,12 @@ input double InpMaxSlippagePips      = 15.0; // Se lo slippage all'apertura supe
 
 //================================ STATO =====================================
 //  Parametri tecnici fissi (non serve toccarli): 10 minuti di        //
-//  osservazione (2 candele M5), congela il range 3 secondi prima     //
-//  della notizia, cancella gli ordini non eseguiti dopo 15 minuti.   //
+//  osservazione (2 candele M5), piazza gli ordini a 1 minuto dalla   //
+//  notizia e li insegue finche' non congela il range a 3 secondi     //
+//  dalla notizia, cancella gli ordini non eseguiti dopo 15 minuti.   //
 
 #define LOOKBACK_MINUTES     10
+#define SECONDS_ARM_EARLY    60
 #define SECONDS_BEFORE_NEWS  3
 #define EXPIRATION_MINUTES   15
 #define SLIPPAGE_POINTS      50
@@ -281,25 +286,22 @@ double NormalizeVolume(double volume)
   }
 
 //+------------------------------------------------------------------+
-//| Piazza i due ordini pendenti (Buy Stop / Sell Stop)                |
+//| Calcola i livelli di entrata/SL/TP dal range attuale, rispettando |
+//| la distanza minima del broker (STOPS_LEVEL). Usata sia per        |
+//| piazzare gli ordini la prima volta sia per ri-prezzarli mentre     |
+//| li si insegue.                                                    |
 //+------------------------------------------------------------------+
-void PlaceOrders()
+void ComputeOrderLevels(double &buyPrice, double &sellPrice,
+                         double &sl_buy, double &tp_buy,
+                         double &sl_sell, double &tp_sell)
   {
-   if(!g_event.rangeValid)
-     {
-      Print("Aquila: range non valido, ordini NON piazzati.");
-      g_event.state  = STATE_DONE;
-      g_event.active = false;
-      return;
-     }
-
    double point  = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
    int    digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
    double pip    = PipSize();
    double dist   = InpPipsDistance * pip;
 
-   double buyPrice  = NormalizeDouble(g_event.rangeHigh + dist, digits);
-   double sellPrice = NormalizeDouble(g_event.rangeLow  - dist, digits);
+   buyPrice  = NormalizeDouble(g_event.rangeHigh + dist, digits);
+   sellPrice = NormalizeDouble(g_event.rangeLow  - dist, digits);
 
    long stopLevelPts = SymbolInfoInteger(_Symbol, SYMBOL_TRADE_STOPS_LEVEL);
    double stopLevel  = stopLevelPts * point;
@@ -314,7 +316,7 @@ void PlaceOrders()
          sellPrice = NormalizeDouble(bid - stopLevel, digits);
      }
 
-   double sl_buy = 0, tp_buy = 0, sl_sell = 0, tp_sell = 0;
+   sl_buy = 0; tp_buy = 0; sl_sell = 0; tp_sell = 0;
    if(InpStopLossPips > 0)
      {
       sl_buy  = NormalizeDouble(buyPrice  - InpStopLossPips * pip, digits);
@@ -325,13 +327,32 @@ void PlaceOrders()
       tp_buy  = NormalizeDouble(buyPrice  + InpTakeProfitPips * pip, digits);
       tp_sell = NormalizeDouble(sellPrice - InpTakeProfitPips * pip, digits);
      }
+  }
+
+//+------------------------------------------------------------------+
+//| Piazza i due ordini pendenti (Buy Stop / Sell Stop) la prima volta,|
+//| a SECONDS_ARM_EARLY dalla notizia                                  |
+//+------------------------------------------------------------------+
+void PlaceOrders()
+  {
+   if(!g_event.rangeValid)
+     {
+      Print("Aquila: range non valido, ordini NON piazzati.");
+      g_event.state  = STATE_DONE;
+      g_event.active = false;
+      return;
+     }
+
+   int digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+   double buyPrice, sellPrice, sl_buy, tp_buy, sl_sell, tp_sell;
+   ComputeOrderLevels(buyPrice, sellPrice, sl_buy, tp_buy, sl_sell, tp_sell);
 
    double volume = NormalizeVolume(InpLotSize);
    datetime expiration = g_event.time + EXPIRATION_MINUTES * 60;
 
-   PrintFormat("Aquila: range [%s , %s], BuyStop=%s SellStop=%s",
+   PrintFormat("Aquila: range [%s , %s], BuyStop=%s SellStop=%s (inseguimento attivo fino a %ds dalla notizia)",
                DoubleToString(g_event.rangeLow, digits), DoubleToString(g_event.rangeHigh, digits),
-               DoubleToString(buyPrice, digits), DoubleToString(sellPrice, digits));
+               DoubleToString(buyPrice, digits), DoubleToString(sellPrice, digits), SECONDS_BEFORE_NEWS);
 
    if(!g_tradingEnabledRuntime)
      {
@@ -370,7 +391,52 @@ bool OrderStillPending(ulong ticket)
   }
 
 //+------------------------------------------------------------------+
-//| Gestisce OCO e scadenza mentre gli ordini sono pendenti (ARMED)   |
+//| Ri-prezza i due ordini pendenti sul range aggiornato (solo finche' |
+//| non si e' congelato a SECONDS_BEFORE_NEWS dalla notizia). Modifica |
+//| gli ordini esistenti, non li ricrea.                               |
+//+------------------------------------------------------------------+
+void UpdateOrders()
+  {
+   if(!g_event.rangeValid)
+      return;
+
+   int    digits = (int)SymbolInfoInteger(_Symbol, SYMBOL_DIGITS);
+   double point  = SymbolInfoDouble(_Symbol, SYMBOL_POINT);
+   double buyPrice, sellPrice, sl_buy, tp_buy, sl_sell, tp_sell;
+   ComputeOrderLevels(buyPrice, sellPrice, sl_buy, tp_buy, sl_sell, tp_sell);
+
+   datetime expiration = g_event.time + EXPIRATION_MINUTES * 60;
+
+   if(g_event.buyTicket != 0 && OrderStillPending(g_event.buyTicket) &&
+      MathAbs(buyPrice - g_event.buyPricePlaced) >= point)
+     {
+      if(trade.OrderModify(g_event.buyTicket, buyPrice, sl_buy, tp_buy, ORDER_TIME_SPECIFIED, expiration))
+         g_event.buyPricePlaced = buyPrice;
+      else
+         PrintFormat("Aquila: errore spostamento BuyStop: %d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+     }
+   if(g_event.sellTicket != 0 && OrderStillPending(g_event.sellTicket) &&
+      MathAbs(sellPrice - g_event.sellPricePlaced) >= point)
+     {
+      if(trade.OrderModify(g_event.sellTicket, sellPrice, sl_sell, tp_sell, ORDER_TIME_SPECIFIED, expiration))
+         g_event.sellPricePlaced = sellPrice;
+      else
+         PrintFormat("Aquila: errore spostamento SellStop: %d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| true se siamo ancora nella finestra di inseguimento (prima di     |
+//| congelare il range a SECONDS_BEFORE_NEWS dalla notizia)           |
+//+------------------------------------------------------------------+
+bool IsTrackingRange()
+  {
+   return(g_event.state == STATE_ARMED && TimeCurrent() < g_event.time - SECONDS_BEFORE_NEWS);
+  }
+
+//+------------------------------------------------------------------+
+//| Gestisce OCO, inseguimento del range e scadenza mentre gli ordini |
+//| sono pendenti (ARMED)                                             |
 //+------------------------------------------------------------------+
 void ManageArmedEvent()
   {
@@ -403,6 +469,13 @@ void ManageArmedEvent()
       if(sellPending) trade.OrderDelete(g_event.sellTicket);
       g_event.state = STATE_POSITION;
       Print("Aquila: scaduto, ordini pendenti residui cancellati.");
+      return;
+     }
+
+   if(IsTrackingRange())
+     {
+      UpdateRange();
+      UpdateOrders();
      }
   }
 
@@ -543,7 +616,7 @@ void ProcessEvent()
      {
       long secToNews = (long)(g_event.time - TimeCurrent());
 
-      if(secToNews > SECONDS_BEFORE_NEWS)
+      if(secToNews > SECONDS_ARM_EARLY)
         {
          UpdateRange();
         }
@@ -641,7 +714,7 @@ string EventStatusText()
       return StringFormat("%s - countdown %s", TimeToString(g_event.time, TIME_DATE | TIME_MINUTES), FormatCountdown(secsLeft));
      }
    if(g_event.state == STATE_ARMED)
-      return("ordini pendenti piazzati, in attesa");
+      return(IsTrackingRange() ? "ordini piazzati, inseguo il range" : "ordini congelati, in attesa");
    if(g_event.state == STATE_POSITION)
       return(g_event.partialDone ? "posizione aperta (parziale gia' fatto)" : "posizione aperta");
    return("concluso");

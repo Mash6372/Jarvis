@@ -30,11 +30,16 @@ differenze).
 Expert Advisor che automatizza la strategia "straddle sulle news": il
 giorno in cui esce una notizia ad alto impatto, osserva le ultime candele a
 5 minuti prima dell'orario di uscita, calcola massimo e minimo del range e,
-3 secondi prima, piazza due ordini pendenti (Buy Stop sopra il massimo,
-Sell Stop sotto il minimo). Quando uno dei due scatta, l'altro viene
-cancellato automaticamente (logica OCO). Include anche la chiusura parziale
-automatica a un target, con spostamento opzionale dello Stop Loss a
-pareggio sul resto della posizione.
+a 1 minuto dall'orario, piazza due ordini pendenti (Buy Stop sopra il
+massimo, Sell Stop sotto il minimo) — poi continua a **spostarli** (li
+modifica, non li ricrea) seguendo il range che si allarga, finché non
+arriva a 3 secondi dall'orario: da lì il range e i livelli restano fermi
+fino all'esecuzione o alla scadenza. Quando uno dei due scatta, l'altro
+viene cancellato automaticamente (logica OCO). Include anche una guardia
+anti-slippage (chiude subito la posizione se il prezzo di riempimento si
+discosta troppo da quello previsto) e la chiusura parziale automatica a un
+target, con spostamento opzionale dello Stop Loss a pareggio sul resto
+della posizione.
 
 **Semplicissimo: un solo campo da cambiare ogni volta.** Il giorno in cui
 devi usarlo, apri le proprietà dell'EA, scrivi l'orario italiano di uscita
@@ -56,14 +61,22 @@ proprietà, il resto lo fa da solo.
    finestra dei 10 minuti precedenti l'orario indicato (le due candele da
    5 minuti prima della notizia), aggiornando il massimo/minimo mentre la
    seconda è ancora in formazione.
-4. 3 secondi prima dell'orario, congela il range e piazza:
+4. A 1 minuto dall'orario piazza:
    - **Buy Stop** = massimo range + `InpPipsDistance` pips
    - **Sell Stop** = minimo range − `InpPipsDistance` pips
+   e da quel momento continua a **spostare** i due ordini (li modifica, non
+   li ricrea) ogni volta che il range si allarga, fino a 3 secondi
+   dall'orario — da lì in poi restano fermi.
 5. Se uno dei due ordini viene eseguito, l'altro viene cancellato subito.
 6. Se nessuno dei due scatta entro 15 minuti, entrambi vengono cancellati.
-7. Se una posizione si apre e raggiunge il target di `InpPartialTriggerPips`,
-   l'EA chiude automaticamente `InpPartialClosePercent`% della posizione e
-   (se il pulsante BE è attivo) sposta lo Stop Loss a pareggio sul resto.
+7. Appena una posizione si apre, l'EA confronta il prezzo di riempimento con
+   quello previsto: se lo scarto (slippage) supera `InpMaxSlippagePips`
+   (`InpMaxSlippageUSD` su Aurum), chiude subito la posizione invece di
+   lasciarla con un rischio più alto del previsto.
+8. Se la posizione resta aperta e raggiunge il target di
+   `InpPartialTriggerPips`, l'EA chiude automaticamente
+   `InpPartialClosePercent`% della posizione e (se il pulsante BE è attivo)
+   sposta lo Stop Loss a pareggio sul resto.
 
 **Per usarlo di nuovo alla prossima notizia:** apri di nuovo le proprietà
 dell'EA (doppio clic sull'EA nel grafico, o clic destro sul grafico →
@@ -160,6 +173,7 @@ management.
 | `InpPartialClosePercent` | % di posizione da chiudere al target parziale (0 = disabilitata). |
 | `InpPartialTriggerPips` | Pips di profitto per far scattare la chiusura parziale. |
 | `InpEnableTrading` | Stato iniziale del pulsante Trading ON/OFF. |
+| `InpMaxSlippagePips` | Se lo slippage tra prezzo previsto ed eseguito supera questi pips, chiude subito la posizione (0 = disattivato, default 15.0). |
 
 ## Tabella degli input — Aurum (oro)
 
@@ -192,6 +206,7 @@ loro equivalente attuale in dollari (riga "Distanza").
 | `InpPartialClosePercent` | % di posizione da chiudere al target parziale (0 = disabilitata). |
 | `InpPartialTriggerUSD` | **Dollari** di profitto per far scattare la chiusura parziale (default 3.00). |
 | `InpEnableTrading` | Stato iniziale del pulsante Trading ON/OFF. |
+| `InpMaxSlippageUSD` | Se lo slippage tra prezzo previsto ed eseguito supera questi dollari, chiude subito la posizione (0 = disattivato, default 10.0). |
 
 > Nota: se il tuo broker non ha EURUSD nel Market Watch con quel nome
 > esatto, l'EA non riesce a leggerne il prezzo e usa un valore di
