@@ -43,7 +43,7 @@
 //|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "1.05"
+#property version   "1.06"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -102,7 +102,7 @@ input int    InpPanelWidth            = 360; // Larghezza pannello in pixel (all
 // Palette "Vexillum" (bronzo/pergamena su ossidiana) per la dashboard
 #define CLR_PANEL_BG    C'36,19,16'
 #define CLR_PANEL_EDGE  C'201,162,75'
-#define CLR_GOLD        C'230,196,122'
+#define CLR_GOLD        C'224,168,50'
 #define CLR_PARCHMENT   C'226,211,180'
 #define CLR_STONE       C'141,124,109'
 #define CLR_PATINA      C'95,125,99'
@@ -833,20 +833,19 @@ void UpdatePanel()
    int y = InpPanelY;
 
    PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * PANEL_LINE_H, "AVRVM", CLR_GOLD, "Georgia");
-   PanelSetLabel(g_panelPrefix + "LS", x, y + 1 * PANEL_LINE_H, "S · P · Q · R", CLR_STONE, "Georgia");
-   PanelSetLabel(g_panelPrefix + "L1", x, y + 2 * PANEL_LINE_H,
+   PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * PANEL_LINE_H,
                  g_tradingEnabledRuntime ? "Modalita': LIVE (invia ordini reali)" : "Modalita': SIMULAZIONE",
                  g_tradingEnabledRuntime ? CLR_GOLD : CLR_STONE);
-   PanelSetLabel(g_panelPrefix + "L2", x, y + 3 * PANEL_LINE_H, "Notizia: " + EventStatusText(), CLR_PARCHMENT);
-   PanelSetLabel(g_panelPrefix + "L3", x, y + 4 * PANEL_LINE_H, EventRangeText(), CLR_STONE);
-   PanelSetLabel(g_panelPrefix + "L4", x, y + 5 * PANEL_LINE_H,
+   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * PANEL_LINE_H, "Notizia: " + EventStatusText(), CLR_PARCHMENT);
+   PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, EventRangeText(), CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H,
                  StringFormat("Dist: %.2f$ (%.1fp EUR) Lot: %.2f SL: %.2f$ TP: %.2f$",
                               GetEquivalentGoldDistance(), InpDistanceEurUsdPips, InpLotSize, InpStopLossUSD, InpTakeProfitUSD),
                  CLR_STONE);
-   PanelSetLabel(g_panelPrefix + "L5", x, y + 6 * PANEL_LINE_H,
+   PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H,
                  StringFormat("Parziale: %.1f%% a %.2f$", InpPartialClosePercent, InpPartialTriggerUSD),
                  CLR_STONE);
-   PanelSetLabel(g_panelPrefix + "L6", x, y + 7 * PANEL_LINE_H,
+   PanelSetLabel(g_panelPrefix + "L6", x, y + 6 * PANEL_LINE_H,
                  InpMaxSlippageUSD > 0 ? StringFormat("Guardia slippage: chiude oltre %.2f$", InpMaxSlippageUSD) : "Guardia slippage: disattivata",
                  CLR_STONE);
 
@@ -869,7 +868,7 @@ void CreatePanel()
    ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, x - 6);
    ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, y - 6);
    ObjectSetInteger(0, bg, OBJPROP_XSIZE, InpPanelWidth);
-   ObjectSetInteger(0, bg, OBJPROP_YSIZE, 8 * PANEL_LINE_H + 44);
+   ObjectSetInteger(0, bg, OBJPROP_YSIZE, 7 * PANEL_LINE_H + 44);
    ObjectSetInteger(0, bg, OBJPROP_ZORDER, 0);
    ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, CLR_PANEL_BG);
    ObjectSetInteger(0, bg, OBJPROP_BORDER_TYPE, BORDER_FLAT);
@@ -879,15 +878,14 @@ void CreatePanel()
    ObjectSetInteger(0, bg, OBJPROP_HIDDEN, true);
 
    PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * PANEL_LINE_H, "AVRVM", CLR_GOLD, "Georgia");
-   PanelSetLabel(g_panelPrefix + "LS", x, y + 1 * PANEL_LINE_H, "S · P · Q · R", CLR_STONE, "Georgia");
-   PanelSetLabel(g_panelPrefix + "L1", x, y + 2 * PANEL_LINE_H, "", CLR_GOLD);
-   PanelSetLabel(g_panelPrefix + "L2", x, y + 3 * PANEL_LINE_H, "", CLR_PARCHMENT);
-   PanelSetLabel(g_panelPrefix + "L3", x, y + 4 * PANEL_LINE_H, "", CLR_STONE);
-   PanelSetLabel(g_panelPrefix + "L4", x, y + 5 * PANEL_LINE_H, "", CLR_STONE);
-   PanelSetLabel(g_panelPrefix + "L5", x, y + 6 * PANEL_LINE_H, "", CLR_STONE);
-   PanelSetLabel(g_panelPrefix + "L6", x, y + 7 * PANEL_LINE_H, "", CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * PANEL_LINE_H, "", CLR_GOLD);
+   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * PANEL_LINE_H, "", CLR_PARCHMENT);
+   PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, "", CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H, "", CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H, "", CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L6", x, y + 6 * PANEL_LINE_H, "", CLR_STONE);
 
-   int by = y + 8 * PANEL_LINE_H + 14;
+   int by = y + 7 * PANEL_LINE_H + 14;
    PanelSetButton(g_panelPrefix + "BtnTrading", x, by, 130, 24, "", clrGray);
    PanelSetButton(g_panelPrefix + "BtnCancel", x + 140, by, 130, 24, "Annulla", CLR_CRIMSON);
 
