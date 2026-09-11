@@ -10,7 +10,7 @@
     --panel:#241310;
     --panel-edge:#c9a24b;
     --gold:#c9a24b;
-    --gold-bright:#e6c47a;
+    --gold-bright:#e0a832;
     --parchment:#e2d3b4;
     --stone:#8d7c6d;
     --stone2:#93816d;
@@ -92,12 +92,8 @@
     padding:14px 16px 16px;
   }
   .panel .ptitle{
-    font-family:"Cinzel", Georgia, serif; font-weight:600; font-size:15px;
-    letter-spacing:.14em; color:var(--gold-bright); margin:0;
-  }
-  .panel .signature{
-    font-family:"Cinzel", Georgia, serif; font-size:9.5px; letter-spacing:.32em;
-    color:var(--stone); margin:3px 0 10px; text-transform:uppercase;
+    font-family:Georgia, "Times New Roman", serif; font-weight:700; font-size:16px;
+    letter-spacing:.1em; color:var(--gold-bright); margin:0 0 8px;
   }
   .panel .rule{height:1px; background:var(--rule); margin:0 0 10px;}
   .panel .row{
@@ -156,25 +152,24 @@
 
 <div class="wrap">
 
-  <div class="eyebrow">Anteprima — nulla è ancora stato toccato nel codice</div>
+  <div class="eyebrow">Revisione — riflette esattamente Aquila.mq5 e Aurum.mq5 di adesso</div>
   <h1>Vexillum</h1>
-  <p class="lede">Il vessillo era lo stendardo che ogni legione romana portava in battaglia — <em>qui</em> è il nome che do a questa proposta di veste per le dashboard di Aquila e Aurum: stessa struttura e stessi dati di oggi, in abito imperiale.</p>
+  <p class="lede">Il vessillo era lo stendardo che ogni legione romana portava in battaglia — <em>qui</em> è il nome che do allo stile delle dashboard di Aquila e Aurum. Rispetto alla prima versione: oro più acceso, niente più firma "S·P·Q·R" sotto il titolo.</p>
 
   <div class="decision">
-    <b>Prima di procedere:</b> guarda i due pannelli qui sotto così come apparirebbero davvero sul grafico — stessi colori piatti, stessi bordi squadrati, stesso font monospace per i numeri che userebbe MT5, nessun effetto che MQL5 non può disegnare. Dimmi se ti piace, cosa cambiare, o se preferisci lasciare tutto com'è.
+    <b>Già applicato nel codice</b> (l'hai già ricevuto), questa pagina serve solo a farti vedere il risultato prima di ricompilare. Stessi colori piatti, stessi bordi squadrati, stesso font che userà davvero MT5 — se qualcosa ancora non ti convince, dimmelo prima di aprire MetaEditor.
   </div>
 
   <section>
     <div class="section-head">
       <div class="num">I · Le due dashboard</div>
       <h2>Sul grafico, così come sarebbero</h2>
-      <p>Titolo in grafia epigrafica romana (la V al posto della U, come nelle iscrizioni vere), firma "S·P·Q·R" sotto il titolo, testo operativo lasciato in italiano — durante una notizia in uscita non è il momento di tradurre "Trading: ON" in latino.</p>
+      <p>Titolo in grafia romana (la V al posto della U, come nelle iscrizioni vere), oro più acceso rispetto alla prima versione — quello pallido si leggeva male — e via la firma "S·P·Q·R", tolta su tua richiesta. Testo operativo lasciato in italiano.</p>
     </div>
 
     <div class="chart">
       <div class="panel">
         <div class="ptitle">AQVILA</div>
-        <div class="signature">S · P · Q · R</div>
         <div class="rule"></div>
         <div class="row mode">Modalita': LIVE (invia ordini reali)</div>
         <div class="row">Notizia: piazzati, inseguo (-42s)</div>
@@ -190,7 +185,6 @@
 
       <div class="panel">
         <div class="ptitle">AVRVM</div>
-        <div class="signature">S · P · Q · R</div>
         <div class="rule"></div>
         <div class="row mode">Modalita': LIVE (invia ordini reali)</div>
         <div class="row">Notizia: piazzati, congelato (-2s)</div>
@@ -214,7 +208,8 @@
     </div>
     <div class="tokens">
       <div class="token"><div class="swatch" style="background:#241310;"></div><div class="meta"><div class="name">Ossidiana</div><div class="hex">#241310 — fondo pannello</div></div></div>
-      <div class="token"><div class="swatch" style="background:#c9a24b;"></div><div class="meta"><div class="name">Bronzo Aureo</div><div class="hex">#c9a24b — bordo, titolo</div></div></div>
+      <div class="token"><div class="swatch" style="background:#c9a24b;"></div><div class="meta"><div class="name">Bronzo Aureo</div><div class="hex">#c9a24b — solo il bordo</div></div></div>
+      <div class="token"><div class="swatch" style="background:#e0a832;"></div><div class="meta"><div class="name">Oro Acceso</div><div class="hex">#e0a832 — titolo, stato LIVE</div></div></div>
       <div class="token"><div class="swatch" style="background:#e2d3b4;"></div><div class="meta"><div class="name">Pergamena</div><div class="hex">#e2d3b4 — testo primario</div></div></div>
       <div class="token"><div class="swatch" style="background:#93816d;"></div><div class="meta"><div class="name">Pietra</div><div class="hex">#93816d — testo secondario</div></div></div>
       <div class="token"><div class="swatch" style="background:#5f7d63;"></div><div class="meta"><div class="name">Verderame</div><div class="hex">#5f7d63 — stato attivo</div></div></div>
@@ -229,9 +224,9 @@
     </div>
     <div class="type-specimen">
       <div class="spec">
-        <div class="label">Titoli — Cinzel</div>
-        <div class="big">AQVILA</div>
-        <p class="sample">Disegnato sulle proporzioni della capitale romana monumentale — le stesse lettere incise sugli archi e sulle colonne. Solo per titoli e intestazioni, mai per il testo dei dati.</p>
+        <div class="label">Titolo pannello — Georgia</div>
+        <div class="big" style="font-family:Georgia, 'Times New Roman', serif; letter-spacing:.06em;">AQVILA</div>
+        <p class="sample">Cinzel (il font "da iscrizione romana" usato qui sopra nel resto della pagina) è un Google Font: MetaTrader non lo vede. Georgia è un font di sistema, ci sarà davvero — un serif classico, meno scolpito ma reale.</p>
       </div>
       <div class="spec">
         <div class="label">Numeri — Consolas</div>
@@ -246,14 +241,14 @@
       <div class="num">IV · Perché questa direzione</div>
       <h2>Le scelte, in breve</h2>
     </div>
-    <p class="why">Aquila e Aurum sono già nomi latini: l'aquila era proprio l'insegna portata in cima al vessillo di ogni legione, e l'oro (<i>aurum</i>) finanziava le campagne. <b>S·P·Q·R</b> come firma sotto il titolo, non come slogan urlato — piccola, in maiuscolo spaziato, il tipo di dettaglio che c'è su un'iscrizione vera. Il resto del pannello resta funzionale: numeri allineati, stati leggibili, niente che rallenti la lettura nel momento in cui conta di più.</p>
+    <p class="why">Aquila e Aurum sono già nomi latini: l'aquila era proprio l'insegna portata in cima al vessillo di ogni legione, e l'oro (<i>aurum</i>) finanziava le campagne — la grafia romana del titolo (<b>AQVILA</b>, <b>AVRVM</b>) basta da sola a portare il tema, senza bisogno di una firma sotto. Il resto del pannello resta funzionale: numeri allineati, stati leggibili, niente che rallenti la lettura nel momento in cui conta di più.</p>
     <div class="caveat">
       <b>Limite onesto:</b> MQL5 disegna solo rettangoli pieni e testo — niente sfumature, niente ombre, niente angoli arrotondati. Quello che vedi sopra, dentro il riquadro scuro, è già il massimo realismo: è esattamente quello che apparirebbe sul tuo grafico, non una versione abbellita per convincerti.
     </div>
   </section>
 
   <footer>
-    Anteprima statica — nessuna modifica è stata applicata ad Aquila.mq5 o Aurum.mq5. Rispondi con "procedi", con le modifiche che vuoi, o con "lascia stare" per non cambiare nulla.
+    Il codice è già stato aggiornato (commit su GitHub, file già inviati in chat) — questa pagina è solo la conferma visiva. Ricompila in MetaEditor per vederlo sul grafico vero.
   </footer>
 
 </div>
