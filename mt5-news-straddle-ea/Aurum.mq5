@@ -43,7 +43,7 @@
 //|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "1.03"
+#property version   "1.04"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -79,8 +79,9 @@ input bool   InpEnableTrading        = true; // false = simulazione: calcola i l
 input double InpMaxSlippageUSD       = 10.0; // Se lo slippage all'apertura supera questi $, chiude subito la posizione (0 = disabilitato)
 
 input group "=== Pannello (posizione sul grafico) ==="
-input int    InpPanelX               = 10; // Distanza in pixel dal bordo sinistro
-input int    InpPanelY               = 20; // Distanza in pixel dal bordo superiore
+input int    InpPanelX                = 10;  // Distanza in pixel dal bordo sinistro
+input int    InpPanelY                = 20;  // Distanza in pixel dal bordo superiore
+input int    InpPanelWidth            = 360; // Larghezza pannello in pixel (allargalo se il testo esce dal bordo)
 
 //================================ STATO =====================================
 //  Parametri tecnici fissi (non serve toccarli): 10 minuti di        //
@@ -97,7 +98,6 @@ input int    InpPanelY               = 20; // Distanza in pixel dal bordo superi
 
 #define PANEL_LINE_H  16
 #define PANEL_FONT    8
-#define PANEL_WIDTH   340
 
 enum EventState
   {
@@ -744,17 +744,21 @@ void PanelSetButton(const string name, const int x, const int y, const int w, co
   }
 
 //+------------------------------------------------------------------+
-//| Formatta un conto alla rovescia in giorni/ore/minuti/secondi      |
+//| Formatta un conto alla rovescia in modo compatto (ore solo se     |
+//| servono, mai giorni: un evento e' sempre entro le 24 ore)         |
 //+------------------------------------------------------------------+
 string FormatCountdown(long secs)
   {
    if(secs < 0)
       secs = 0;
-   long d = secs / 86400; secs %= 86400;
-   long h = secs / 3600;  secs %= 3600;
-   long m = secs / 60;    secs %= 60;
+   long h = secs / 3600; secs %= 3600;
+   long m = secs / 60;   secs %= 60;
    long s = secs;
-   return StringFormat("%02dg %02dh %02dm %02ds", (int)d, (int)h, (int)m, (int)s);
+   if(h > 0)
+      return StringFormat("%dh%02dm%02ds", (int)h, (int)m, (int)s);
+   if(m > 0)
+      return StringFormat("%dm%02ds", (int)m, (int)s);
+   return StringFormat("%ds", (int)s);
   }
 
 //+------------------------------------------------------------------+
@@ -768,13 +772,13 @@ string EventStatusText()
    if(g_event.state == STATE_WAITING)
      {
       long secsLeft = (long)(g_event.time - TimeCurrent());
-      return StringFormat("%s - countdown %s", TimeToString(g_event.time, TIME_DATE | TIME_MINUTES), FormatCountdown(secsLeft));
+      return StringFormat("%s (-%s)", TimeToString(g_event.time, TIME_MINUTES), FormatCountdown(secsLeft));
      }
    if(g_event.state == STATE_ARMED)
      {
       long secsLeft = (long)(g_event.time - TimeCurrent());
-      string tracking = IsTrackingRange() ? "inseguo il range" : "congelati";
-      return StringFormat("ordini piazzati (%s) - countdown %s", tracking, FormatCountdown(secsLeft));
+      string tracking = IsTrackingRange() ? "inseguo" : "congelato";
+      return StringFormat("piazzati, %s (-%s)", tracking, FormatCountdown(secsLeft));
      }
    if(g_event.state == STATE_POSITION)
       return(g_event.partialDone ? "posizione aperta (parziale gia' fatto)" : "posizione aperta");
@@ -826,7 +830,7 @@ void UpdatePanel()
    PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * PANEL_LINE_H, "Notizia: " + EventStatusText(), clrYellow);
    PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, EventRangeText(), clrWhite);
    PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H,
-                 StringFormat("Distanza: %.2f$ (=%.1fp EURUSD)  Lotto: %.2f  SL: %.2f$  TP: %.2f$",
+                 StringFormat("Dist: %.2f$ (%.1fp EUR) Lot: %.2f SL: %.2f$ TP: %.2f$",
                               GetEquivalentGoldDistance(), InpDistanceEurUsdPips, InpLotSize, InpStopLossUSD, InpTakeProfitUSD),
                  clrSilver);
    PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H,
@@ -854,7 +858,7 @@ void CreatePanel()
    ObjectSetInteger(0, bg, OBJPROP_CORNER, CORNER_LEFT_UPPER);
    ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, x - 6);
    ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, y - 6);
-   ObjectSetInteger(0, bg, OBJPROP_XSIZE, PANEL_WIDTH);
+   ObjectSetInteger(0, bg, OBJPROP_XSIZE, InpPanelWidth);
    ObjectSetInteger(0, bg, OBJPROP_YSIZE, 7 * PANEL_LINE_H + 44);
    ObjectSetInteger(0, bg, OBJPROP_ZORDER, 0);
    ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, C'20,20,20');
