@@ -43,7 +43,7 @@
 //|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "1.02"
+#property version   "1.03"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -78,6 +78,10 @@ input group "=== Sicurezza ==="
 input bool   InpEnableTrading        = true; // false = simulazione: calcola i livelli ma non invia ordini reali
 input double InpMaxSlippageUSD       = 10.0; // Se lo slippage all'apertura supera questi $, chiude subito la posizione (0 = disabilitato)
 
+input group "=== Pannello (posizione sul grafico) ==="
+input int    InpPanelX               = 10; // Distanza in pixel dal bordo sinistro
+input int    InpPanelY               = 20; // Distanza in pixel dal bordo superiore
+
 //================================ STATO =====================================
 //  Parametri tecnici fissi (non serve toccarli): 10 minuti di        //
 //  osservazione (2 candele M5), piazza gli ordini a 1 minuto dalla   //
@@ -93,8 +97,7 @@ input double InpMaxSlippageUSD       = 10.0; // Se lo slippage all'apertura supe
 
 #define PANEL_LINE_H  16
 #define PANEL_FONT    8
-#define PANEL_X       10
-#define PANEL_Y       20
+#define PANEL_WIDTH   340
 
 enum EventState
   {
@@ -768,7 +771,11 @@ string EventStatusText()
       return StringFormat("%s - countdown %s", TimeToString(g_event.time, TIME_DATE | TIME_MINUTES), FormatCountdown(secsLeft));
      }
    if(g_event.state == STATE_ARMED)
-      return(IsTrackingRange() ? "ordini piazzati, inseguo il range" : "ordini congelati, in attesa");
+     {
+      long secsLeft = (long)(g_event.time - TimeCurrent());
+      string tracking = IsTrackingRange() ? "inseguo il range" : "congelati";
+      return StringFormat("ordini piazzati (%s) - countdown %s", tracking, FormatCountdown(secsLeft));
+     }
    if(g_event.state == STATE_POSITION)
       return(g_event.partialDone ? "posizione aperta (parziale gia' fatto)" : "posizione aperta");
    return("concluso");
@@ -809,8 +816,8 @@ void UpdateTradingButton()
 //+------------------------------------------------------------------+
 void UpdatePanel()
   {
-   int x = PANEL_X;
-   int y = PANEL_Y;
+   int x = InpPanelX;
+   int y = InpPanelY;
 
    PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * PANEL_LINE_H, "AURUM - Dashboard (ORO)", clrWhite);
    PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * PANEL_LINE_H,
@@ -838,8 +845,8 @@ void UpdatePanel()
 //+------------------------------------------------------------------+
 void CreatePanel()
   {
-   int x = PANEL_X;
-   int y = PANEL_Y;
+   int x = InpPanelX;
+   int y = InpPanelY;
 
    string bg = g_panelPrefix + "BG";
    if(ObjectFind(0, bg) < 0)
@@ -847,7 +854,7 @@ void CreatePanel()
    ObjectSetInteger(0, bg, OBJPROP_CORNER, CORNER_LEFT_UPPER);
    ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, x - 6);
    ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, y - 6);
-   ObjectSetInteger(0, bg, OBJPROP_XSIZE, 280);
+   ObjectSetInteger(0, bg, OBJPROP_XSIZE, PANEL_WIDTH);
    ObjectSetInteger(0, bg, OBJPROP_YSIZE, 7 * PANEL_LINE_H + 44);
    ObjectSetInteger(0, bg, OBJPROP_ZORDER, 0);
    ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, C'20,20,20');

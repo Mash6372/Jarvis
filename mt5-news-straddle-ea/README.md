@@ -174,6 +174,7 @@ management.
 | `InpPartialTriggerPips` | Pips di profitto per far scattare la chiusura parziale. |
 | `InpEnableTrading` | Stato iniziale del pulsante Trading ON/OFF. |
 | `InpMaxSlippagePips` | Se lo slippage tra prezzo previsto ed eseguito supera questi pips, chiude subito la posizione (0 = disattivato, default 15.0). |
+| `InpPanelX` / `InpPanelY` | Posizione della dashboard sul grafico, in pixel dal bordo sinistro/superiore (default 10/20). |
 
 ## Tabella degli input — Aurum (oro)
 
@@ -207,6 +208,7 @@ loro equivalente attuale in dollari (riga "Distanza").
 | `InpPartialTriggerUSD` | **Dollari** di profitto per far scattare la chiusura parziale (default 3.00). |
 | `InpEnableTrading` | Stato iniziale del pulsante Trading ON/OFF. |
 | `InpMaxSlippageUSD` | Se lo slippage tra prezzo previsto ed eseguito supera questi dollari, chiude subito la posizione (0 = disattivato, default 10.0). |
+| `InpPanelX` / `InpPanelY` | Posizione della dashboard sul grafico, in pixel dal bordo sinistro/superiore (default 10/20). |
 
 > Nota: se il tuo broker non ha EURUSD nel Market Watch con quel nome
 > esatto, l'EA non riesce a leggerne il prezzo e usa un valore di
