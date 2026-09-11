@@ -27,7 +27,7 @@
 //|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "5.07"
+#property version   "5.08"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -78,7 +78,6 @@ input int    InpPanelWidth            = 360; // Larghezza pannello in pixel (all
 
 // Palette "Vexillum" (bronzo/pergamena su nero) per la dashboard
 #define CLR_PANEL_BG    C'0,0,0'
-#define CLR_PANEL_EDGE  C'201,162,75'
 #define CLR_GOLD        C'224,168,50'
 #define CLR_PARCHMENT   C'226,211,180'
 #define CLR_STONE       C'141,124,109'
@@ -818,7 +817,7 @@ void CreatePanel()
    ObjectSetInteger(0, bg, OBJPROP_ZORDER, 0);
    ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, CLR_PANEL_BG);
    ObjectSetInteger(0, bg, OBJPROP_BORDER_TYPE, BORDER_FLAT);
-   ObjectSetInteger(0, bg, OBJPROP_COLOR, CLR_PANEL_EDGE);
+   ObjectSetInteger(0, bg, OBJPROP_COLOR, CLR_GOLD);
    ObjectSetInteger(0, bg, OBJPROP_BACK, false);
    ObjectSetInteger(0, bg, OBJPROP_SELECTABLE, false);
    ObjectSetInteger(0, bg, OBJPROP_HIDDEN, true);
