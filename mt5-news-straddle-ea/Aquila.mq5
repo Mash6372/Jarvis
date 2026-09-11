@@ -24,7 +24,7 @@
 //|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "5.00"
+#property version   "5.01"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -50,6 +50,7 @@ input double InpPartialTriggerPips   = 15.0; // Pips di profitto per far scattar
 
 input group "=== Sicurezza ==="
 input bool   InpEnableTrading        = true; // false = simulazione: calcola i livelli ma non invia ordini reali
+input double InpMaxSlippagePips      = 15.0; // Se lo slippage all'apertura supera questi pips, chiude subito la posizione (0 = disabilitato)
 
 //================================ STATO =====================================
 //  Parametri tecnici fissi (non serve toccarli): 10 minuti di        //
@@ -87,6 +88,7 @@ struct EventInfo
    ulong       sellTicket;
    ulong       positionTicket;
    bool        partialDone;
+   bool        slippageChecked;
    double      buyPricePlaced;
    double      sellPricePlaced;
   };
@@ -114,6 +116,7 @@ void ResetEvent()
    g_event.sellTicket     = 0;
    g_event.positionTicket = 0;
    g_event.partialDone    = false;
+   g_event.slippageChecked = false;
    g_event.buyPricePlaced  = 0;
    g_event.sellPricePlaced = 0;
   }
@@ -444,6 +447,36 @@ void ManagePosition()
       return;
      }
 
+   if(!g_event.slippageChecked)
+     {
+      g_event.slippageChecked = true;
+      if(InpMaxSlippagePips > 0)
+        {
+         long   posType      = PositionGetInteger(POSITION_TYPE);
+         double openPrice    = PositionGetDouble(POSITION_PRICE_OPEN);
+         double plannedPrice = (posType == POSITION_TYPE_BUY) ? g_event.buyPricePlaced : g_event.sellPricePlaced;
+
+         if(plannedPrice > 0)
+           {
+            double slippagePips = MathAbs(openPrice - plannedPrice) / PipSize();
+            if(slippagePips > InpMaxSlippagePips)
+              {
+               PrintFormat("Aquila: slippage %.1f pips oltre la soglia di %.1f (previsto %s, eseguito %s) - chiudo subito.",
+                           slippagePips, InpMaxSlippagePips, DoubleToString(plannedPrice, _Digits), DoubleToString(openPrice, _Digits));
+               if(trade.PositionClose(g_event.positionTicket))
+                 {
+                  g_event.positionTicket = 0;
+                  g_event.state  = STATE_DONE;
+                  g_event.active = false;
+                 }
+               else
+                  PrintFormat("Aquila: errore chiusura per slippage eccessivo: %d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+               return;
+              }
+           }
+        }
+     }
+
    if(InpPartialClosePercent > 0 && !g_event.partialDone)
      {
       double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
@@ -665,6 +698,9 @@ void UpdatePanel()
    PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H,
                  StringFormat("Parziale: %.1f%% a %.1fp", InpPartialClosePercent, InpPartialTriggerPips),
                  clrSilver);
+   PanelSetLabel(g_panelPrefix + "L6", x, y + 6 * PANEL_LINE_H,
+                 InpMaxSlippagePips > 0 ? StringFormat("Guardia slippage: chiude oltre %.1fp", InpMaxSlippagePips) : "Guardia slippage: disattivata",
+                 clrSilver);
 
    UpdateTradingButton();
    ChartRedraw(0);
@@ -685,7 +721,7 @@ void CreatePanel()
    ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, x - 6);
    ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, y - 6);
    ObjectSetInteger(0, bg, OBJPROP_XSIZE, 280);
-   ObjectSetInteger(0, bg, OBJPROP_YSIZE, 6 * PANEL_LINE_H + 44);
+   ObjectSetInteger(0, bg, OBJPROP_YSIZE, 7 * PANEL_LINE_H + 44);
    ObjectSetInteger(0, bg, OBJPROP_ZORDER, 0);
    ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, C'20,20,20');
    ObjectSetInteger(0, bg, OBJPROP_BORDER_TYPE, BORDER_FLAT);
@@ -700,8 +736,9 @@ void CreatePanel()
    PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, "", clrWhite);
    PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H, "", clrSilver);
    PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H, "", clrSilver);
+   PanelSetLabel(g_panelPrefix + "L6", x, y + 6 * PANEL_LINE_H, "", clrSilver);
 
-   int by = y + 6 * PANEL_LINE_H + 14;
+   int by = y + 7 * PANEL_LINE_H + 14;
    PanelSetButton(g_panelPrefix + "BtnTrading", x, by, 130, 24, "", clrGray);
    PanelSetButton(g_panelPrefix + "BtnCancel", x + 140, by, 130, 24, "Annulla", clrMaroon);
 
