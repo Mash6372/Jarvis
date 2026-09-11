@@ -1,0 +1,259 @@
+<title>Vexillum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#140b0a;
+    --canvas:#0c0807;
+    --canvas-line: rgba(201,162,75,.05);
+    --panel:#241310;
+    --panel-edge:#c9a24b;
+    --gold:#c9a24b;
+    --gold-bright:#e6c47a;
+    --parchment:#e2d3b4;
+    --stone:#8d7c6d;
+    --stone2:#93816d;
+    --crimson:#7a2020;
+    --crimson-bright:#9c2b2b;
+    --patina:#5f7d63;
+    --patina-bright:#729279;
+    --rule:#4a332a;
+    --shadow: 0 18px 50px -20px rgba(0,0,0,.8);
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--parchment);
+    font-family:"EB Garamond", Georgia, serif;
+    line-height:1.6;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:64px 24px 90px;}
+
+  .eyebrow{
+    font-family:"Cinzel", Georgia, serif;
+    font-size:12px; font-weight:600; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--gold); display:flex; align-items:center; gap:12px; margin-bottom:18px;
+  }
+  .eyebrow::before{content:"";width:28px;height:1px;background:var(--gold); display:inline-block;}
+
+  h1{
+    font-family:"Cinzel", Georgia, serif;
+    font-weight:700;
+    font-size:clamp(34px,5.4vw,50px);
+    letter-spacing:.02em;
+    margin:0 0 14px;
+    color:var(--gold-bright);
+    text-wrap:balance;
+  }
+  .lede{
+    max-width:62ch; font-size:19px; color:var(--stone2); margin:0 0 8px;
+  }
+  .lede em{color:var(--parchment); font-style:italic;}
+
+  .decision{
+    margin-top:22px; padding:14px 18px; border:1px solid var(--rule); border-left:3px solid var(--gold);
+    background:rgba(201,162,75,.05); font-size:15.5px; color:var(--parchment); max-width:62ch;
+  }
+  .decision b{color:var(--gold-bright); font-weight:600;}
+
+  section{margin-top:64px;}
+  .section-head{margin-bottom:26px;}
+  .section-head .num{
+    font-family:"Cinzel", Georgia, serif; font-size:11.5px; letter-spacing:.18em; color:var(--stone);
+    text-transform:uppercase;
+  }
+  .section-head h2{
+    font-family:"Cinzel", Georgia, serif; font-weight:600; font-size:24px; color:var(--gold-bright);
+    margin:6px 0 0; letter-spacing:.01em;
+  }
+  .section-head p{color:var(--stone2); max-width:60ch; margin:10px 0 0; font-size:16.5px;}
+
+  /* ---- simulated MT5 chart canvas ---- */
+  .chart{
+    background:
+      repeating-linear-gradient(0deg, var(--canvas-line) 0px, var(--canvas-line) 1px, transparent 1px, transparent 64px),
+      repeating-linear-gradient(90deg, var(--canvas-line) 0px, var(--canvas-line) 1px, transparent 1px, transparent 64px),
+      var(--canvas);
+    border:1px solid #201412;
+    padding:26px;
+    display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start;
+  }
+
+  /* ---- the panel itself: flat fill, square corners, 1px border - exactly what
+         OBJ_RECTANGLE_LABEL / OBJ_LABEL / OBJ_BUTTON can actually render in MT5,
+         no gradients, no shadows, no rounded corners ---- */
+  .panel{
+    width:340px;
+    background:var(--panel);
+    border:1px solid var(--panel-edge);
+    padding:14px 16px 16px;
+  }
+  .panel .ptitle{
+    font-family:"Cinzel", Georgia, serif; font-weight:600; font-size:15px;
+    letter-spacing:.14em; color:var(--gold-bright); margin:0;
+  }
+  .panel .signature{
+    font-family:"Cinzel", Georgia, serif; font-size:9.5px; letter-spacing:.32em;
+    color:var(--stone); margin:3px 0 10px; text-transform:uppercase;
+  }
+  .panel .rule{height:1px; background:var(--rule); margin:0 0 10px;}
+  .panel .row{
+    font-family:Consolas, "SF Mono", "Cascadia Code", monospace;
+    font-size:12.5px; color:var(--parchment); padding:3px 0; white-space:pre;
+  }
+  .panel .row.dim{color:var(--stone2);}
+  .panel .row.mode{color:var(--gold-bright);}
+  .panel .btns{display:flex; gap:8px; margin-top:12px;}
+  .panel .btn{
+    flex:1; text-align:center; padding:7px 0; font-family:Consolas, monospace; font-size:12px;
+    font-weight:600; letter-spacing:.02em; color:#f2e9d6; border:1px solid rgba(0,0,0,.35);
+  }
+  .btn.on{background:var(--patina);}
+  .btn.off{background:var(--crimson);}
+
+  /* ---- token sheet ---- */
+  .tokens{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;}
+  .token{border:1px solid var(--rule); background:rgba(255,255,255,.015);}
+  .token .swatch{height:52px;}
+  .token .meta{padding:10px 12px;}
+  .token .name{
+    font-family:"Cinzel", Georgia, serif; font-size:12px; letter-spacing:.06em; color:var(--parchment);
+  }
+  .token .hex{
+    font-family:Consolas, monospace; font-size:11.5px; color:var(--stone); margin-top:2px;
+  }
+
+  .type-specimen{
+    display:grid; grid-template-columns:1fr 1fr; gap:22px;
+  }
+  @media (max-width:640px){ .type-specimen{grid-template-columns:1fr;} }
+  .spec{border:1px solid var(--rule); padding:20px 22px; background:rgba(255,255,255,.015);}
+  .spec .label{
+    font-family:"Cinzel", Georgia, serif; font-size:11px; letter-spacing:.16em; color:var(--stone);
+    text-transform:uppercase; margin-bottom:12px;
+  }
+  .spec .big{font-family:"Cinzel", Georgia, serif; font-size:30px; color:var(--gold-bright); margin:0 0 6px; letter-spacing:.02em;}
+  .spec .sample{font-family:"EB Garamond", Georgia, serif; font-size:16.5px; color:var(--parchment); margin:0;}
+  .spec .mono-sample{font-family:Consolas, "SF Mono", monospace; font-size:13.5px; color:var(--parchment); margin:0;}
+
+  .why{max-width:62ch; font-size:16.5px; color:var(--parchment);}
+  .why b{color:var(--gold-bright); font-weight:600;}
+
+  .caveat{
+    margin-top:18px; padding:14px 18px; border:1px solid var(--rule); border-left:3px solid var(--stone);
+    background:rgba(255,255,255,.02); font-size:14.5px; color:var(--stone2); max-width:62ch;
+  }
+  .caveat b{color:var(--parchment); font-weight:600;}
+
+  footer{
+    margin-top:70px; padding-top:24px; border-top:1px solid var(--rule);
+    font-size:14px; color:var(--stone);
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="eyebrow">Anteprima — nulla è ancora stato toccato nel codice</div>
+  <h1>Vexillum</h1>
+  <p class="lede">Il vessillo era lo stendardo che ogni legione romana portava in battaglia — <em>qui</em> è il nome che do a questa proposta di veste per le dashboard di Aquila e Aurum: stessa struttura e stessi dati di oggi, in abito imperiale.</p>
+
+  <div class="decision">
+    <b>Prima di procedere:</b> guarda i due pannelli qui sotto così come apparirebbero davvero sul grafico — stessi colori piatti, stessi bordi squadrati, stesso font monospace per i numeri che userebbe MT5, nessun effetto che MQL5 non può disegnare. Dimmi se ti piace, cosa cambiare, o se preferisci lasciare tutto com'è.
+  </div>
+
+  <section>
+    <div class="section-head">
+      <div class="num">I · Le due dashboard</div>
+      <h2>Sul grafico, così come sarebbero</h2>
+      <p>Titolo in grafia epigrafica romana (la V al posto della U, come nelle iscrizioni vere), firma "S·P·Q·R" sotto il titolo, testo operativo lasciato in italiano — durante una notizia in uscita non è il momento di tradurre "Trading: ON" in latino.</p>
+    </div>
+
+    <div class="chart">
+      <div class="panel">
+        <div class="ptitle">AQVILA</div>
+        <div class="signature">S · P · Q · R</div>
+        <div class="rule"></div>
+        <div class="row mode">Modalita': LIVE (invia ordini reali)</div>
+        <div class="row">Notizia: piazzati, inseguo (-42s)</div>
+        <div class="row dim">Range: H=1.08532  L=1.08411</div>
+        <div class="row dim">Distanza: 3.0p  Lotto: 0.10  SL: 20.0p  TP: 0.0p</div>
+        <div class="row dim">Parziale: 50.0% a 15.0p</div>
+        <div class="row dim">Guardia slippage: chiude oltre 15.0p</div>
+        <div class="btns">
+          <div class="btn on">Trading: ON</div>
+          <div class="btn off">Annulla</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ptitle">AVRVM</div>
+        <div class="signature">S · P · Q · R</div>
+        <div class="rule"></div>
+        <div class="row mode">Modalita': LIVE (invia ordini reali)</div>
+        <div class="row">Notizia: piazzati, congelato (-2s)</div>
+        <div class="row dim">Range: H=4331.20  L=4328.70</div>
+        <div class="row dim">Dist: 0.74$ (3.0p EUR) Lot: 0.10 SL: 5.00$ TP: 0.00$</div>
+        <div class="row dim">Parziale: 50.0% a 3.00$</div>
+        <div class="row dim">Guardia slippage: chiude oltre 10.00$</div>
+        <div class="btns">
+          <div class="btn on">Trading: ON</div>
+          <div class="btn off">Annulla</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div class="num">II · Materiali</div>
+      <h2>Palette</h2>
+      <p>Non oro lucido e porpora da cartone animato: bronzo invecchiato, pergamena, ossidiana — i colori di un'iscrizione vera dopo duemila anni, non di una moneta appena coniata.</p>
+    </div>
+    <div class="tokens">
+      <div class="token"><div class="swatch" style="background:#241310;"></div><div class="meta"><div class="name">Ossidiana</div><div class="hex">#241310 — fondo pannello</div></div></div>
+      <div class="token"><div class="swatch" style="background:#c9a24b;"></div><div class="meta"><div class="name">Bronzo Aureo</div><div class="hex">#c9a24b — bordo, titolo</div></div></div>
+      <div class="token"><div class="swatch" style="background:#e2d3b4;"></div><div class="meta"><div class="name">Pergamena</div><div class="hex">#e2d3b4 — testo primario</div></div></div>
+      <div class="token"><div class="swatch" style="background:#93816d;"></div><div class="meta"><div class="name">Pietra</div><div class="hex">#93816d — testo secondario</div></div></div>
+      <div class="token"><div class="swatch" style="background:#5f7d63;"></div><div class="meta"><div class="name">Verderame</div><div class="hex">#5f7d63 — stato attivo</div></div></div>
+      <div class="token"><div class="swatch" style="background:#7a2020;"></div><div class="meta"><div class="name">Porpora</div><div class="hex">#7a2020 — stato di stop</div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div class="num">III · Materiali</div>
+      <h2>Caratteri</h2>
+    </div>
+    <div class="type-specimen">
+      <div class="spec">
+        <div class="label">Titoli — Cinzel</div>
+        <div class="big">AQVILA</div>
+        <p class="sample">Disegnato sulle proporzioni della capitale romana monumentale — le stesse lettere incise sugli archi e sulle colonne. Solo per titoli e intestazioni, mai per il testo dei dati.</p>
+      </div>
+      <div class="spec">
+        <div class="label">Numeri — Consolas</div>
+        <div class="big" style="font-family:Consolas, monospace; font-size:15px; letter-spacing:0;">Range: H=1.08532  L=1.08411</div>
+        <p class="mono-sample">È già il font che MetaTrader userà davvero per le righe della dashboard — cifre allineate in colonna, nessuna sorpresa tra questa anteprima e il grafico reale.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div class="num">IV · Perché questa direzione</div>
+      <h2>Le scelte, in breve</h2>
+    </div>
+    <p class="why">Aquila e Aurum sono già nomi latini: l'aquila era proprio l'insegna portata in cima al vessillo di ogni legione, e l'oro (<i>aurum</i>) finanziava le campagne. <b>S·P·Q·R</b> come firma sotto il titolo, non come slogan urlato — piccola, in maiuscolo spaziato, il tipo di dettaglio che c'è su un'iscrizione vera. Il resto del pannello resta funzionale: numeri allineati, stati leggibili, niente che rallenti la lettura nel momento in cui conta di più.</p>
+    <div class="caveat">
+      <b>Limite onesto:</b> MQL5 disegna solo rettangoli pieni e testo — niente sfumature, niente ombre, niente angoli arrotondati. Quello che vedi sopra, dentro il riquadro scuro, è già il massimo realismo: è esattamente quello che apparirebbe sul tuo grafico, non una versione abbellita per convincerti.
+    </div>
+  </section>
+
+  <footer>
+    Anteprima statica — nessuna modifica è stata applicata ad Aquila.mq5 o Aurum.mq5. Rispondi con "procedi", con le modifiche che vuoi, o con "lascia stare" per non cambiare nulla.
+  </footer>
+
+</div>
