@@ -27,7 +27,7 @@
 //|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "5.04"
+#property version   "5.05"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -75,6 +75,15 @@ input int    InpPanelWidth            = 360; // Larghezza pannello in pixel (all
 
 #define PANEL_LINE_H  16
 #define PANEL_FONT    8
+
+// Palette "Vexillum" (bronzo/pergamena su ossidiana) per la dashboard
+#define CLR_PANEL_BG    C'36,19,16'
+#define CLR_PANEL_EDGE  C'201,162,75'
+#define CLR_GOLD        C'230,196,122'
+#define CLR_PARCHMENT   C'226,211,180'
+#define CLR_STONE       C'141,124,109'
+#define CLR_PATINA      C'95,125,99'
+#define CLR_CRIMSON     C'122,32,32'
 
 enum EventState
   {
@@ -648,7 +657,7 @@ void ProcessEvent()
 //+------------------------------------------------------------------+
 //| Crea/aggiorna un'etichetta di testo del pannello (sola lettura)   |
 //+------------------------------------------------------------------+
-void PanelSetLabel(const string name, const int x, const int y, const string text, const color clr)
+void PanelSetLabel(const string name, const int x, const int y, const string text, const color clr, const string font="Consolas")
   {
    if(ObjectFind(0, name) < 0)
      {
@@ -657,7 +666,7 @@ void PanelSetLabel(const string name, const int x, const int y, const string tex
       ObjectSetInteger(0, name, OBJPROP_XDISTANCE, x);
       ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
       ObjectSetInteger(0, name, OBJPROP_FONTSIZE, PANEL_FONT);
-      ObjectSetString(0, name, OBJPROP_FONT, "Consolas");
+      ObjectSetString(0, name, OBJPROP_FONT, font);
       ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
       ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
       ObjectSetInteger(0, name, OBJPROP_ZORDER, 5);
@@ -680,7 +689,7 @@ void PanelSetButton(const string name, const int x, const int y, const int w, co
       ObjectSetInteger(0, name, OBJPROP_XSIZE, w);
       ObjectSetInteger(0, name, OBJPROP_YSIZE, h);
       ObjectSetInteger(0, name, OBJPROP_FONTSIZE, PANEL_FONT);
-      ObjectSetInteger(0, name, OBJPROP_COLOR, clrWhite);
+      ObjectSetInteger(0, name, OBJPROP_COLOR, CLR_PARCHMENT);
       ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
       ObjectSetInteger(0, name, OBJPROP_HIDDEN, true);
       ObjectSetInteger(0, name, OBJPROP_ZORDER, 10);
@@ -752,12 +761,12 @@ void UpdateTradingButton()
    if(g_tradingEnabledRuntime)
      {
       ObjectSetString(0, name, OBJPROP_TEXT, "Trading: ON");
-      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrDarkGreen);
+      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, CLR_PATINA);
      }
    else
      {
       ObjectSetString(0, name, OBJPROP_TEXT, "Trading: OFF");
-      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clrFireBrick);
+      ObjectSetInteger(0, name, OBJPROP_BGCOLOR, CLR_CRIMSON);
      }
   }
 
@@ -769,22 +778,23 @@ void UpdatePanel()
    int x = InpPanelX;
    int y = InpPanelY;
 
-   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * PANEL_LINE_H, "AQUILA - Dashboard", clrWhite);
-   PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * PANEL_LINE_H,
+   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * PANEL_LINE_H, "AQVILA", CLR_GOLD, "Georgia");
+   PanelSetLabel(g_panelPrefix + "LS", x, y + 1 * PANEL_LINE_H, "S · P · Q · R", CLR_STONE, "Georgia");
+   PanelSetLabel(g_panelPrefix + "L1", x, y + 2 * PANEL_LINE_H,
                  g_tradingEnabledRuntime ? "Modalita': LIVE (invia ordini reali)" : "Modalita': SIMULAZIONE",
-                 g_tradingEnabledRuntime ? clrOrange : clrLightGray);
-   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * PANEL_LINE_H, "Notizia: " + EventStatusText(), clrYellow);
-   PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, EventRangeText(), clrWhite);
-   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H,
+                 g_tradingEnabledRuntime ? CLR_GOLD : CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L2", x, y + 3 * PANEL_LINE_H, "Notizia: " + EventStatusText(), CLR_PARCHMENT);
+   PanelSetLabel(g_panelPrefix + "L3", x, y + 4 * PANEL_LINE_H, EventRangeText(), CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L4", x, y + 5 * PANEL_LINE_H,
                  StringFormat("Distanza: %.1fp  Lotto: %.2f  SL: %.1fp  TP: %.1fp",
                               InpPipsDistance, InpLotSize, InpStopLossPips, InpTakeProfitPips),
-                 clrSilver);
-   PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H,
+                 CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L5", x, y + 6 * PANEL_LINE_H,
                  StringFormat("Parziale: %.1f%% a %.1fp", InpPartialClosePercent, InpPartialTriggerPips),
-                 clrSilver);
-   PanelSetLabel(g_panelPrefix + "L6", x, y + 6 * PANEL_LINE_H,
+                 CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L6", x, y + 7 * PANEL_LINE_H,
                  InpMaxSlippagePips > 0 ? StringFormat("Guardia slippage: chiude oltre %.1fp", InpMaxSlippagePips) : "Guardia slippage: disattivata",
-                 clrSilver);
+                 CLR_STONE);
 
    UpdateTradingButton();
    ChartRedraw(0);
@@ -805,26 +815,27 @@ void CreatePanel()
    ObjectSetInteger(0, bg, OBJPROP_XDISTANCE, x - 6);
    ObjectSetInteger(0, bg, OBJPROP_YDISTANCE, y - 6);
    ObjectSetInteger(0, bg, OBJPROP_XSIZE, InpPanelWidth);
-   ObjectSetInteger(0, bg, OBJPROP_YSIZE, 7 * PANEL_LINE_H + 44);
+   ObjectSetInteger(0, bg, OBJPROP_YSIZE, 8 * PANEL_LINE_H + 44);
    ObjectSetInteger(0, bg, OBJPROP_ZORDER, 0);
-   ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, C'20,20,20');
+   ObjectSetInteger(0, bg, OBJPROP_BGCOLOR, CLR_PANEL_BG);
    ObjectSetInteger(0, bg, OBJPROP_BORDER_TYPE, BORDER_FLAT);
-   ObjectSetInteger(0, bg, OBJPROP_COLOR, clrSilver);
+   ObjectSetInteger(0, bg, OBJPROP_COLOR, CLR_PANEL_EDGE);
    ObjectSetInteger(0, bg, OBJPROP_BACK, false);
    ObjectSetInteger(0, bg, OBJPROP_SELECTABLE, false);
    ObjectSetInteger(0, bg, OBJPROP_HIDDEN, true);
 
-   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * PANEL_LINE_H, "AQUILA - Dashboard", clrWhite);
-   PanelSetLabel(g_panelPrefix + "L1", x, y + 1 * PANEL_LINE_H, "", clrWhite);
-   PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * PANEL_LINE_H, "", clrYellow);
-   PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, "", clrWhite);
-   PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H, "", clrSilver);
-   PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H, "", clrSilver);
-   PanelSetLabel(g_panelPrefix + "L6", x, y + 6 * PANEL_LINE_H, "", clrSilver);
+   PanelSetLabel(g_panelPrefix + "L0", x, y + 0 * PANEL_LINE_H, "AQVILA", CLR_GOLD, "Georgia");
+   PanelSetLabel(g_panelPrefix + "LS", x, y + 1 * PANEL_LINE_H, "S · P · Q · R", CLR_STONE, "Georgia");
+   PanelSetLabel(g_panelPrefix + "L1", x, y + 2 * PANEL_LINE_H, "", CLR_GOLD);
+   PanelSetLabel(g_panelPrefix + "L2", x, y + 3 * PANEL_LINE_H, "", CLR_PARCHMENT);
+   PanelSetLabel(g_panelPrefix + "L3", x, y + 4 * PANEL_LINE_H, "", CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L4", x, y + 5 * PANEL_LINE_H, "", CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L5", x, y + 6 * PANEL_LINE_H, "", CLR_STONE);
+   PanelSetLabel(g_panelPrefix + "L6", x, y + 7 * PANEL_LINE_H, "", CLR_STONE);
 
-   int by = y + 7 * PANEL_LINE_H + 14;
+   int by = y + 8 * PANEL_LINE_H + 14;
    PanelSetButton(g_panelPrefix + "BtnTrading", x, by, 130, 24, "", clrGray);
-   PanelSetButton(g_panelPrefix + "BtnCancel", x + 140, by, 130, 24, "Annulla", clrMaroon);
+   PanelSetButton(g_panelPrefix + "BtnCancel", x + 140, by, 130, 24, "Annulla", CLR_CRIMSON);
 
    UpdatePanel();
   }
