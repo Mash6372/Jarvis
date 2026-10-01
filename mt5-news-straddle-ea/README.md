@@ -22,10 +22,9 @@ sulle news", ognuno pensato per il tipo di strumento giusto:
 > contrario.**
 
 Entrambi funzionano allo stesso identico modo (stesso pannello, stessa
-logica OCO, stessa chiusura parziale) — cambiano solo le unità di misura
-delle distanze. Le istruzioni sotto usano Aquila come esempio, ma valgono
-identiche per Aurum (vedi la tabella input dedicata più in basso per le
-differenze).
+chiusura parziale) — cambiano solo le unità di misura delle distanze. Le
+istruzioni sotto usano Aquila come esempio, ma valgono identiche per Aurum
+(vedi la tabella input dedicata più in basso per le differenze).
 
 Expert Advisor che automatizza la strategia "straddle sulle news": il
 giorno in cui esce una notizia ad alto impatto, osserva le ultime candele a
@@ -34,12 +33,16 @@ a 1 minuto dall'orario, piazza due ordini pendenti (Buy Stop sopra il
 massimo, Sell Stop sotto il minimo) — poi continua a **spostarli** (li
 modifica, non li ricrea) seguendo il range che si allarga, finché non
 arriva a 3 secondi dall'orario: da lì il range e i livelli restano fermi
-fino all'esecuzione o alla scadenza. Quando uno dei due scatta, l'altro
-viene cancellato automaticamente (logica OCO). Include anche una guardia
-anti-slippage (chiude subito la posizione se il prezzo di riempimento si
-discosta troppo da quello previsto) e la chiusura parziale automatica a un
-target, con spostamento opzionale dello Stop Loss a pareggio sul resto
-della posizione.
+fino all'esecuzione o alla scadenza. **Nessun OCO**: se scattano entrambi
+gli ordini (es. falso breakout seguito da inversione), restano aperte due
+posizioni indipendenti, ognuna con il proprio Stop Loss piazzato a **metà
+del canale** osservato prima della notizia (range alto/basso), sempre
+compreso tra un minimo e un massimo configurabili in pips. Include anche
+una guardia anti-slippage (chiude subito la posizione se il prezzo di
+riempimento si discosta troppo da quello previsto) e la chiusura parziale
+automatica a un target, con spostamento opzionale dello Stop Loss a
+pareggio sul resto della posizione. Ogni gamba (Buy e Sell) viene gestita
+in modo completamente indipendente dall'altra.
 
 **Semplicissimo: un solo campo da cambiare ogni volta.** Il giorno in cui
 devi usarlo, apri le proprietà dell'EA, scrivi l'orario italiano di uscita
@@ -67,16 +70,27 @@ proprietà, il resto lo fa da solo.
    e da quel momento continua a **spostare** i due ordini (li modifica, non
    li ricrea) ogni volta che il range si allarga, fino a 3 secondi
    dall'orario — da lì in poi restano fermi.
-5. Se uno dei due ordini viene eseguito, l'altro viene cancellato subito.
-6. Se nessuno dei due scatta entro 15 minuti, entrambi vengono cancellati.
-7. Appena una posizione si apre, l'EA confronta il prezzo di riempimento con
+5. **Nessun OCO**: se un ordine scatta, l'altro resta pendente e continua a
+   essere inseguito/gestito per conto suo — può scattare a sua volta (es.
+   falso breakout seguito da inversione), aprendo una seconda posizione
+   indipendente dalla prima.
+6. Ogni ordine ancora pendente dopo 15 minuti viene cancellato per conto
+   suo, indipendentemente dall'altro.
+7. Lo Stop Loss di ogni posizione viene piazzato a **metà del canale**
+   osservato prima della notizia (range alto/basso), sempre compreso tra
+   `InpStopLossMinPips` e `InpStopLossMaxPips` pips di distanza dal prezzo
+   di entrata — mai più stretto del minimo (protezione dallo slippage sui
+   canali piccoli), mai più largo del massimo.
+8. Appena una posizione si apre, l'EA confronta il prezzo di riempimento con
    quello previsto: se lo scarto (slippage) supera `InpMaxSlippagePips`
-   (`InpMaxSlippageUSD` su Aurum), chiude subito la posizione invece di
-   lasciarla con un rischio più alto del previsto.
-8. Se la posizione resta aperta e raggiunge il target di
+   (`InpMaxSlippageUSD` su Aurum), chiude subito quella posizione invece di
+   lasciarla con un rischio più alto del previsto — indipendentemente
+   dall'altra gamba.
+9. Se una posizione resta aperta e raggiunge il target di
    `InpPartialTriggerPips`, l'EA chiude automaticamente
-   `InpPartialClosePercent`% della posizione e (se il pulsante BE è attivo)
-   sposta lo Stop Loss a pareggio sul resto.
+   `InpPartialClosePercent`% di quella posizione e (se il pulsante BE è
+   attivo) sposta lo Stop Loss a pareggio sul resto — di nuovo, in modo
+   indipendente per ciascuna gamba.
 
 **Per usarlo di nuovo alla prossima notizia:** apri di nuovo le proprietà
 dell'EA (doppio clic sull'EA nel grafico, o clic destro sul grafico →
@@ -168,7 +182,8 @@ management.
 | `InpServerMinusItalyMin` | Differenza in minuti server−Italia (si imposta una volta sola). |
 | `InpPipsDistance` | Distanza in pips tra massimo/minimo e prezzo di entrata. |
 | `InpLotSize` | Lotti per ogni ordine. |
-| `InpStopLossPips` | Stop Loss in pips (0 = nessuno). |
+| `InpStopLossMinPips` | Stop Loss minimo in pips: protegge dallo slippage sui canali pre-notizia molto stretti. |
+| `InpStopLossMaxPips` | Stop Loss massimo in pips (0 = nessuno Stop Loss). Il bot lo piazza a metà del canale pre-notizia, sempre compreso tra il minimo e questo massimo. |
 | `InpTakeProfitPips` | Take Profit finale in pips (0 = nessuno). |
 | `InpPartialClosePercent` | % di posizione da chiudere al target parziale (0 = disabilitata). |
 | `InpPartialTriggerPips` | Pips di profitto per far scattare la chiusura parziale. |
@@ -179,7 +194,11 @@ management.
 
 ## Tabella degli input — Aurum (oro)
 
-Stessa logica, stesso pannello. Cambia il modo in cui si esprime la
+Stesso pannello. **Nota:** a differenza di Aquila, Aurum usa ancora la
+logica OCO classica (un solo Stop Loss fisso in dollari, `InpStopLossUSD`,
+e cancellazione dell'ordine opposto quando uno dei due scatta) — non ha
+ancora il nuovo Stop Loss a metà canale né la gestione indipendente delle
+due gambe. Cambia il modo in cui si esprime la
 **distanza tra massimo/minimo e prezzo di entrata**: invece di un numero
 fisso, è l'**equivalente in tempo reale di N pips di EURUSD**, ricalcolato
 ogni volta sul prezzo attuale dell'oro. L'EA legge il prezzo di EURUSD e

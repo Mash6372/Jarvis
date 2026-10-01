@@ -8,26 +8,30 @@
 //|  (InpNewsTime). L'EA fa tutto da solo:                            |
 //|   1) osserva le candele M5 nei 10 minuti precedenti l'orario,     |
 //|      aggiornando in tempo reale massimo e minimo;                 |
-//|   2) a 1 minuto dall'orario piazza due ordini pendenti in OCO:     |
+//|   2) a 1 minuto dall'orario piazza due ordini pendenti:            |
 //|        - Buy Stop = massimo range + X pips                        |
 //|        - Sell Stop = minimo range - X pips                        |
 //|      e continua a SPOSTARLI (non li ricrea, li modifica) seguendo |
 //|      il range che si allarga, finche' non arriva a 3 secondi      |
 //|      dall'orario: da li' in poi il range e i livelli restano      |
 //|      fermi (congelati) fino all'esecuzione o alla scadenza;       |
-//|   3) quando uno dei due scatta, cancella l'altro;                 |
-//|   4) se nessuno dei due scatta entro 15 minuti, li cancella       |
-//|      entrambi;                                                    |
-//|   5) sulla posizione aperta, se impostata una chiusura parziale,  |
-//|      chiude una percentuale al target indicato e (opzionale)      |
-//|      sposta lo Stop Loss a pareggio sul resto.                    |
+//|   3) NESSUN OCO: se scattano entrambi (es. falso breakout seguito |
+//|      da inversione), restano aperte due posizioni indipendenti,   |
+//|      ognuna con il proprio Stop Loss piazzato a META' del canale   |
+//|      pre-notizia (range alto/basso), con un minimo e un massimo    |
+//|      configurabili in pips;                                       |
+//|   4) se un ordine non scatta entro 15 minuti, viene cancellato    |
+//|      (indipendentemente dall'altro);                              |
+//|   5) su ciascuna posizione aperta, se impostata una chiusura      |
+//|      parziale, chiude una percentuale al target indicato e        |
+//|      (opzionale) sposta lo Stop Loss a pareggio sul resto.        |
 //|                                                                    |
 //|  Il pannello sul grafico e' di sola lettura: mostra lo stato in   |
 //|  tempo reale e ha 2 pulsanti (Trading ON/OFF, Annulla). Disegna   |
 //|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "5.08"
+#property version   "5.09"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -46,7 +50,8 @@ input int    InpServerMinusItalyMin  = 60;   // Differenza in MINUTI tra orario 
 input group "=== Ordini ==="
 input double InpPipsDistance         = 3.0;  // Distanza in pips tra massimo/minimo e prezzo di entrata
 input double InpLotSize              = 0.10; // Lotti per ogni ordine
-input double InpStopLossPips         = 20.0; // Stop Loss in pips (0 = nessuno)
+input double InpStopLossMinPips      = 8.0;  // Stop Loss minimo in pips (protegge dallo slippage sui canali stretti)
+input double InpStopLossMaxPips      = 20.0; // Stop Loss massimo in pips (0 = nessuno Stop Loss). Il bot lo piazza a meta' del canale pre-notizia, sempre tra questo minimo e questo massimo
 input double InpTakeProfitPips       = 0.0;  // Take Profit finale in pips (0 = nessuno)
 input double InpPartialClosePercent  = 50.0; // % di posizione da chiudere al target parziale (0 = disabilitata)
 input double InpPartialTriggerPips   = 15.0; // Pips di profitto per far scattare la chiusura parziale
@@ -87,9 +92,8 @@ input int    InpPanelWidth            = 360; // Larghezza pannello in pixel (all
 enum EventState
   {
    STATE_WAITING  = 0, // in attesa, si aggiorna il range
-   STATE_ARMED    = 1, // ordini pendenti piazzati, in attesa di esecuzione/scadenza
-   STATE_POSITION = 2, // una posizione e' aperta, gestione parziale/BE in corso
-   STATE_DONE     = 3  // evento concluso
+   STATE_ARMED    = 1, // evento attivo: ordini pendenti e/o posizioni aperte, nessun OCO fra le due gambe
+   STATE_DONE     = 3  // evento concluso (entrambe le gambe chiuse/scadute)
   };
 
 struct EventInfo
@@ -102,9 +106,12 @@ struct EventInfo
    bool        rangeValid;
    ulong       buyTicket;
    ulong       sellTicket;
-   ulong       positionTicket;
-   bool        partialDone;
-   bool        slippageChecked;
+   ulong       buyPositionTicket;
+   ulong       sellPositionTicket;
+   bool        buyPartialDone;
+   bool        sellPartialDone;
+   bool        buySlippageChecked;
+   bool        sellSlippageChecked;
    double      buyPricePlaced;
    double      sellPricePlaced;
   };
@@ -130,9 +137,12 @@ void ResetEvent()
    g_event.rangeValid     = false;
    g_event.buyTicket      = 0;
    g_event.sellTicket     = 0;
-   g_event.positionTicket = 0;
-   g_event.partialDone    = false;
-   g_event.slippageChecked = false;
+   g_event.buyPositionTicket  = 0;
+   g_event.sellPositionTicket = 0;
+   g_event.buyPartialDone     = false;
+   g_event.sellPartialDone    = false;
+   g_event.buySlippageChecked  = false;
+   g_event.sellSlippageChecked = false;
    g_event.buyPricePlaced  = 0;
    g_event.sellPricePlaced = 0;
   }
@@ -328,10 +338,17 @@ void ComputeOrderLevels(double &buyPrice, double &sellPrice,
      }
 
    sl_buy = 0; tp_buy = 0; sl_sell = 0; tp_sell = 0;
-   if(InpStopLossPips > 0)
+   if(InpStopLossMaxPips > 0)
      {
-      sl_buy  = NormalizeDouble(buyPrice  - InpStopLossPips * pip, digits);
-      sl_sell = NormalizeDouble(sellPrice + InpStopLossPips * pip, digits);
+      double channelMid = (g_event.rangeHigh + g_event.rangeLow) / 2.0;
+
+      double buySlPips = (buyPrice - channelMid) / pip;
+      buySlPips = MathMax(InpStopLossMinPips, MathMin(InpStopLossMaxPips, buySlPips));
+      sl_buy = NormalizeDouble(buyPrice - buySlPips * pip, digits);
+
+      double sellSlPips = (channelMid - sellPrice) / pip;
+      sellSlPips = MathMax(InpStopLossMinPips, MathMin(InpStopLossMaxPips, sellSlPips));
+      sl_sell = NormalizeDouble(sellPrice + sellSlPips * pip, digits);
      }
    if(InpTakeProfitPips > 0)
      {
@@ -446,57 +463,15 @@ bool IsTrackingRange()
   }
 
 //+------------------------------------------------------------------+
-//| Gestisce OCO, inseguimento del range e scadenza mentre gli ordini |
-//| sono pendenti (ARMED)                                             |
+//| Gestisce una singola gamba (Buy o Sell): trova la posizione       |
+//| aperta se non ancora assegnata, applica la guardia anti-slippage  |
+//| e la chiusura parziale/breakeven. Le due gambe sono indipendenti  |
+//| perche' senza OCO possono finire aperte entrambe.                 |
 //+------------------------------------------------------------------+
-void ManageArmedEvent()
+void ManageLeg(ulong &positionTicket, bool &partialDone, bool &slippageChecked,
+               const double plannedPrice, const bool isBuy)
   {
-   bool buyPending  = OrderStillPending(g_event.buyTicket);
-   bool sellPending = OrderStillPending(g_event.sellTicket);
-
-   if(g_event.buyTicket != 0 && !buyPending && sellPending)
-     {
-      trade.OrderDelete(g_event.sellTicket);
-      g_event.state = STATE_POSITION;
-      Print("Aquila: BuyStop eseguito, SellStop annullato.");
-      return;
-     }
-   if(g_event.sellTicket != 0 && !sellPending && buyPending)
-     {
-      trade.OrderDelete(g_event.buyTicket);
-      g_event.state = STATE_POSITION;
-      Print("Aquila: SellStop eseguito, BuyStop annullato.");
-      return;
-     }
-   if(!buyPending && !sellPending)
-     {
-      g_event.state = STATE_POSITION; // ManagePosition capira' se esiste davvero una posizione
-      return;
-     }
-
-   if(TimeCurrent() - g_event.time > EXPIRATION_MINUTES * 60)
-     {
-      if(buyPending)  trade.OrderDelete(g_event.buyTicket);
-      if(sellPending) trade.OrderDelete(g_event.sellTicket);
-      g_event.state = STATE_POSITION;
-      Print("Aquila: scaduto, ordini pendenti residui cancellati.");
-      return;
-     }
-
-   if(IsTrackingRange())
-     {
-      UpdateRange();
-      UpdateOrders();
-     }
-  }
-
-//+------------------------------------------------------------------+
-//| Trova/gestisce la posizione aperta: chiusura parziale al target   |
-//| e spostamento a pareggio                                           |
-//+------------------------------------------------------------------+
-void ManagePosition()
-  {
-   if(g_event.positionTicket == 0)
+   if(positionTicket == 0)
      {
       for(int i = 0; i < PositionsTotal(); i++)
         {
@@ -507,61 +482,52 @@ void ManagePosition()
             continue;
          if(PositionGetString(POSITION_SYMBOL) != _Symbol)
             continue;
+         long posType = PositionGetInteger(POSITION_TYPE);
+         if(isBuy  && posType != POSITION_TYPE_BUY)
+            continue;
+         if(!isBuy && posType != POSITION_TYPE_SELL)
+            continue;
 
-         g_event.positionTicket = ticket;
-         g_event.partialDone    = false;
+         positionTicket  = ticket;
+         partialDone     = false;
+         slippageChecked = false;
+         PrintFormat("Aquila: %s Stop eseguito.", isBuy ? "Buy" : "Sell");
          break;
         }
 
-      if(g_event.positionTicket == 0)
-        {
-         // nessuno dei due ordini e' mai scattato
-         g_event.state  = STATE_DONE;
-         g_event.active = false;
+      if(positionTicket == 0)
          return;
-        }
      }
 
-   if(!PositionSelectByTicket(g_event.positionTicket))
+   if(!PositionSelectByTicket(positionTicket))
      {
-      Print("Aquila: posizione chiusa.");
-      g_event.positionTicket = 0;
-      g_event.state  = STATE_DONE;
-      g_event.active = false;
+      PrintFormat("Aquila: posizione %s chiusa.", isBuy ? "Buy" : "Sell");
+      positionTicket = 0;
       return;
      }
 
-   if(!g_event.slippageChecked)
+   if(!slippageChecked)
      {
-      g_event.slippageChecked = true;
-      if(InpMaxSlippagePips > 0)
+      slippageChecked = true;
+      if(InpMaxSlippagePips > 0 && plannedPrice > 0)
         {
-         long   posType      = PositionGetInteger(POSITION_TYPE);
          double openPrice    = PositionGetDouble(POSITION_PRICE_OPEN);
-         double plannedPrice = (posType == POSITION_TYPE_BUY) ? g_event.buyPricePlaced : g_event.sellPricePlaced;
-
-         if(plannedPrice > 0)
+         double slippagePips = MathAbs(openPrice - plannedPrice) / PipSize();
+         if(slippagePips > InpMaxSlippagePips)
            {
-            double slippagePips = MathAbs(openPrice - plannedPrice) / PipSize();
-            if(slippagePips > InpMaxSlippagePips)
-              {
-               PrintFormat("Aquila: slippage %.1f pips oltre la soglia di %.1f (previsto %s, eseguito %s) - chiudo subito.",
-                           slippagePips, InpMaxSlippagePips, DoubleToString(plannedPrice, _Digits), DoubleToString(openPrice, _Digits));
-               if(trade.PositionClose(g_event.positionTicket))
-                 {
-                  g_event.positionTicket = 0;
-                  g_event.state  = STATE_DONE;
-                  g_event.active = false;
-                 }
-               else
-                  PrintFormat("Aquila: errore chiusura per slippage eccessivo: %d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
-               return;
-              }
+            PrintFormat("Aquila: slippage %.1f pips oltre la soglia di %.1f sulla gamba %s (previsto %s, eseguito %s) - chiudo subito.",
+                        slippagePips, InpMaxSlippagePips, isBuy ? "Buy" : "Sell",
+                        DoubleToString(plannedPrice, _Digits), DoubleToString(openPrice, _Digits));
+            if(trade.PositionClose(positionTicket))
+               positionTicket = 0;
+            else
+               PrintFormat("Aquila: errore chiusura per slippage eccessivo: %d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+            return;
            }
         }
      }
 
-   if(InpPartialClosePercent > 0 && !g_event.partialDone)
+   if(InpPartialClosePercent > 0 && !partialDone)
      {
       double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
       long   posType   = PositionGetInteger(POSITION_TYPE);
@@ -576,18 +542,63 @@ void ManagePosition()
 
          if(closeVol > 0 && closeVol < vol)
            {
-            if(trade.PositionClosePartial(g_event.positionTicket, closeVol))
+            if(trade.PositionClosePartial(positionTicket, closeVol))
               {
-               g_event.partialDone = true;
-               PrintFormat("Aquila: chiusura parziale %.1f%% eseguita a +%.1f pips.", InpPartialClosePercent, profitPips);
+               partialDone = true;
+               PrintFormat("Aquila: chiusura parziale %.1f%% sulla gamba %s eseguita a +%.1f pips.", InpPartialClosePercent, isBuy ? "Buy" : "Sell", profitPips);
 
-               if(g_moveToBreakeven && PositionSelectByTicket(g_event.positionTicket))
-                  trade.PositionModify(g_event.positionTicket, openPrice, PositionGetDouble(POSITION_TP));
+               if(g_moveToBreakeven && PositionSelectByTicket(positionTicket))
+                  trade.PositionModify(positionTicket, openPrice, PositionGetDouble(POSITION_TP));
               }
             else
-               PrintFormat("Aquila: errore chiusura parziale: %d %s", trade.ResultRetcode(), trade.ResultRetcodeDescription());
+               PrintFormat("Aquila: errore chiusura parziale gamba %s: %d %s", isBuy ? "Buy" : "Sell", trade.ResultRetcode(), trade.ResultRetcodeDescription());
            }
         }
+     }
+  }
+
+//+------------------------------------------------------------------+
+//| Gestisce inseguimento del range e scadenza mentre gli ordini      |
+//| sono pendenti, e richiama la gestione di entrambe le gambe        |
+//| (Buy e Sell), indipendenti fra loro: NESSUN OCO, quindi possono   |
+//| restare aperte entrambe se scattano a loro volta.                 |
+//+------------------------------------------------------------------+
+void ManageArmedEvent()
+  {
+   bool buyPending  = OrderStillPending(g_event.buyTicket);
+   bool sellPending = OrderStillPending(g_event.sellTicket);
+
+   if(TimeCurrent() - g_event.time > EXPIRATION_MINUTES * 60)
+     {
+      if(buyPending)
+        {
+         trade.OrderDelete(g_event.buyTicket);
+         buyPending = false;
+         Print("Aquila: BuyStop scaduto, cancellato.");
+        }
+      if(sellPending)
+        {
+         trade.OrderDelete(g_event.sellTicket);
+         sellPending = false;
+         Print("Aquila: SellStop scaduto, cancellato.");
+        }
+     }
+   else if(IsTrackingRange())
+     {
+      UpdateRange();
+      UpdateOrders();
+     }
+
+   ManageLeg(g_event.buyPositionTicket, g_event.buyPartialDone, g_event.buySlippageChecked, g_event.buyPricePlaced, true);
+   ManageLeg(g_event.sellPositionTicket, g_event.sellPartialDone, g_event.sellSlippageChecked, g_event.sellPricePlaced, false);
+
+   bool buyDone  = !OrderStillPending(g_event.buyTicket)  && g_event.buyPositionTicket  == 0;
+   bool sellDone = !OrderStillPending(g_event.sellTicket) && g_event.sellPositionTicket == 0;
+   if(buyDone && sellDone)
+     {
+      g_event.state  = STATE_DONE;
+      g_event.active = false;
+      Print("Aquila: evento concluso (entrambe le gambe chiuse o scadute).");
      }
   }
 
@@ -607,8 +618,10 @@ void CancelEvent()
       trade.OrderDelete(g_event.buyTicket);
    if(g_event.sellTicket != 0 && OrderStillPending(g_event.sellTicket))
       trade.OrderDelete(g_event.sellTicket);
-   if(g_event.positionTicket != 0 && PositionSelectByTicket(g_event.positionTicket))
-      trade.PositionClose(g_event.positionTicket);
+   if(g_event.buyPositionTicket != 0 && PositionSelectByTicket(g_event.buyPositionTicket))
+      trade.PositionClose(g_event.buyPositionTicket);
+   if(g_event.sellPositionTicket != 0 && PositionSelectByTicket(g_event.sellPositionTicket))
+      trade.PositionClose(g_event.sellPositionTicket);
 
    g_event.state  = STATE_DONE;
    g_event.active = false;
@@ -646,10 +659,6 @@ void ProcessEvent()
    else if(g_event.state == STATE_ARMED)
      {
       ManageArmedEvent();
-     }
-   else if(g_event.state == STATE_POSITION)
-     {
-      ManagePosition();
      }
   }
 
@@ -716,6 +725,18 @@ string FormatCountdown(long secs)
   }
 
 //+------------------------------------------------------------------+
+//| Testo di stato sintetico di una gamba (Buy o Sell)                |
+//+------------------------------------------------------------------+
+string LegStatusText(ulong orderTicket, ulong positionTicket, bool partialDone)
+  {
+   if(positionTicket != 0)
+      return(partialDone ? "pos.(parz)" : "posizione");
+   if(orderTicket != 0 && OrderStillPending(orderTicket))
+      return("pendente");
+   return("chiuso");
+  }
+
+//+------------------------------------------------------------------+
 //| Testo di stato sintetico dell'evento                              |
 //+------------------------------------------------------------------+
 string EventStatusText()
@@ -730,12 +751,15 @@ string EventStatusText()
      }
    if(g_event.state == STATE_ARMED)
      {
-      long secsLeft = (long)(g_event.time - TimeCurrent());
-      string tracking = IsTrackingRange() ? "inseguo" : "congelato";
-      return StringFormat("piazzati, %s (-%s)", tracking, FormatCountdown(secsLeft));
+      string buyStatus  = LegStatusText(g_event.buyTicket, g_event.buyPositionTicket, g_event.buyPartialDone);
+      string sellStatus = LegStatusText(g_event.sellTicket, g_event.sellPositionTicket, g_event.sellPartialDone);
+      if(IsTrackingRange())
+        {
+         long secsLeft = (long)(g_event.time - TimeCurrent());
+         return StringFormat("Buy: %s  Sell: %s (-%s)", buyStatus, sellStatus, FormatCountdown(secsLeft));
+        }
+      return StringFormat("Buy: %s  Sell: %s", buyStatus, sellStatus);
      }
-   if(g_event.state == STATE_POSITION)
-      return(g_event.partialDone ? "posizione aperta (parziale gia' fatto)" : "posizione aperta");
    return("concluso");
   }
 
@@ -784,8 +808,8 @@ void UpdatePanel()
    PanelSetLabel(g_panelPrefix + "L2", x, y + 2 * PANEL_LINE_H, "Notizia: " + EventStatusText(), CLR_PARCHMENT);
    PanelSetLabel(g_panelPrefix + "L3", x, y + 3 * PANEL_LINE_H, EventRangeText(), CLR_STONE);
    PanelSetLabel(g_panelPrefix + "L4", x, y + 4 * PANEL_LINE_H,
-                 StringFormat("Distanza: %.1fp  Lotto: %.2f  SL: %.1fp  TP: %.1fp",
-                              InpPipsDistance, InpLotSize, InpStopLossPips, InpTakeProfitPips),
+                 StringFormat("Distanza: %.1fp  Lotto: %.2f  SL: %.0f-%.0fp  TP: %.1fp",
+                              InpPipsDistance, InpLotSize, InpStopLossMinPips, InpStopLossMaxPips, InpTakeProfitPips),
                  CLR_STONE);
    PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H,
                  StringFormat("Parziale: %.1f%% a %.1fp", InpPartialClosePercent, InpPartialTriggerPips),
@@ -903,31 +927,19 @@ void DrawEventLines()
      }
    else if(g_event.state == STATE_ARMED)
      {
-      SetLevelLine(nBuy,  g_event.buyPricePlaced,  clrLime,      STYLE_SOLID, "Aquila - Buy Stop piazzato");
-      SetLevelLine(nSell, g_event.sellPricePlaced, clrOrangeRed, STYLE_SOLID, "Aquila - Sell Stop piazzato");
-     }
-   else if(g_event.state == STATE_POSITION)
-     {
-      if(g_event.positionTicket != 0 && PositionSelectByTicket(g_event.positionTicket))
-        {
-         double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
-         long   posType   = PositionGetInteger(POSITION_TYPE);
-         if(posType == POSITION_TYPE_BUY)
-           {
-            SetLevelLine(nBuy, openPrice, clrLime, STYLE_SOLID, "Aquila - ingresso BUY");
-            ObjectDelete(0, nSell);
-           }
-         else
-           {
-            SetLevelLine(nSell, openPrice, clrOrangeRed, STYLE_SOLID, "Aquila - ingresso SELL");
-            ObjectDelete(0, nBuy);
-           }
-        }
+      if(g_event.buyPositionTicket != 0 && PositionSelectByTicket(g_event.buyPositionTicket))
+         SetLevelLine(nBuy, PositionGetDouble(POSITION_PRICE_OPEN), clrLime, STYLE_SOLID, "Aquila - ingresso BUY");
+      else if(g_event.buyTicket != 0 && OrderStillPending(g_event.buyTicket))
+         SetLevelLine(nBuy, g_event.buyPricePlaced, clrLime, STYLE_SOLID, "Aquila - Buy Stop piazzato");
       else
-        {
          ObjectDelete(0, nBuy);
+
+      if(g_event.sellPositionTicket != 0 && PositionSelectByTicket(g_event.sellPositionTicket))
+         SetLevelLine(nSell, PositionGetDouble(POSITION_PRICE_OPEN), clrOrangeRed, STYLE_SOLID, "Aquila - ingresso SELL");
+      else if(g_event.sellTicket != 0 && OrderStillPending(g_event.sellTicket))
+         SetLevelLine(nSell, g_event.sellPricePlaced, clrOrangeRed, STYLE_SOLID, "Aquila - Sell Stop piazzato");
+      else
          ObjectDelete(0, nSell);
-        }
      }
   }
 
