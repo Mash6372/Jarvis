@@ -79,8 +79,9 @@ proprietà, il resto lo fa da solo.
 7. Lo Stop Loss di ogni posizione viene piazzato a **metà del canale**
    osservato prima della notizia (range alto/basso), sempre compreso tra
    `InpStopLossMinPips` e `InpStopLossMaxPips` pips di distanza dal prezzo
-   di entrata — mai più stretto del minimo (protezione dallo slippage sui
-   canali piccoli), mai più largo del massimo.
+   di entrata (`InpStopLossMinUSD`/`InpStopLossMaxUSD` su Aurum) — mai più
+   stretto del minimo (protezione dallo slippage sui canali piccoli), mai
+   più largo del massimo.
 8. Appena una posizione si apre, l'EA confronta il prezzo di riempimento con
    quello previsto: se lo scarto (slippage) supera `InpMaxSlippagePips`
    (`InpMaxSlippageUSD` su Aurum), chiude subito quella posizione invece di
@@ -194,11 +195,8 @@ management.
 
 ## Tabella degli input — Aurum (oro)
 
-Stesso pannello. **Nota:** a differenza di Aquila, Aurum usa ancora la
-logica OCO classica (un solo Stop Loss fisso in dollari, `InpStopLossUSD`,
-e cancellazione dell'ordine opposto quando uno dei due scatta) — non ha
-ancora il nuovo Stop Loss a metà canale né la gestione indipendente delle
-due gambe. Cambia il modo in cui si esprime la
+Stessa logica, stesso pannello (Stop Loss a metà canale, nessun OCO,
+gambe Buy/Sell gestite in modo indipendente). Cambia il modo in cui si esprime la
 **distanza tra massimo/minimo e prezzo di entrata**: invece di un numero
 fisso, è l'**equivalente in tempo reale di N pips di EURUSD**, ricalcolato
 ogni volta sul prezzo attuale dell'oro. L'EA legge il prezzo di EURUSD e
@@ -222,7 +220,8 @@ loro equivalente attuale in dollari (riga "Distanza").
 | `InpDistanceEurUsdPips` | Distanza espressa come pips di EURUSD (default 3.0), ricalcolata in dollari sull'oro in tempo reale. |
 | `InpEurUsdSymbol` | Nome esatto del simbolo EURUSD sul tuo broker (default `"EURUSD"` — cambialo se nel tuo Market Watch si chiama diversamente, es. `EURUSD.a`). |
 | `InpLotSize` | Lotti per ogni ordine. |
-| `InpStopLossUSD` | Stop Loss in **dollari** (0 = nessuno, default 5.00). |
+| `InpStopLossMinUSD` | Stop Loss minimo in **dollari**: protegge dallo slippage sui canali pre-notizia molto stretti (default 2.00). |
+| `InpStopLossMaxUSD` | Stop Loss massimo in **dollari** (0 = nessuno Stop Loss, default 5.00). Il bot lo piazza a metà del canale pre-notizia, sempre compreso tra il minimo e questo massimo. |
 | `InpTakeProfitUSD` | Take Profit finale in **dollari** (0 = nessuno). |
 | `InpPartialClosePercent` | % di posizione da chiudere al target parziale (0 = disabilitata). |
 | `InpPartialTriggerUSD` | **Dollari** di profitto per far scattare la chiusura parziale (default 3.00). |
