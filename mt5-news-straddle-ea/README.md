@@ -187,7 +187,7 @@ management.
 | `InpStopLossMaxPips` | Stop Loss massimo in pips (0 = nessuno Stop Loss). Il bot lo piazza a metà del canale pre-notizia, sempre compreso tra il minimo e questo massimo. |
 | `InpTakeProfitPips` | Take Profit finale in pips (0 = nessuno). |
 | `InpPartialClosePercent` | % di posizione da chiudere al target parziale (0 = disabilitata). |
-| `InpPartialTriggerPips` | Pips di profitto per far scattare la chiusura parziale. |
+| `InpPartialTriggerPips` | Pips di profitto per far scattare la chiusura parziale (default 20.0, cioè 200 punti MT5 a 5 decimali). |
 | `InpEnableTrading` | Stato iniziale del pulsante Trading ON/OFF. |
 | `InpMaxSlippagePips` | Se lo slippage tra prezzo previsto ed eseguito supera questi pips, chiude subito la posizione (0 = disattivato, default 15.0). |
 | `InpPanelX` / `InpPanelY` | Posizione della dashboard sul grafico, in pixel dal bordo sinistro/superiore (default 10/20). |

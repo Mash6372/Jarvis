@@ -31,7 +31,7 @@
 //|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "5.09"
+#property version   "5.10"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -54,7 +54,7 @@ input double InpStopLossMinPips      = 8.0;  // Stop Loss minimo in pips (proteg
 input double InpStopLossMaxPips      = 20.0; // Stop Loss massimo in pips (0 = nessuno Stop Loss). Il bot lo piazza a meta' del canale pre-notizia, sempre tra questo minimo e questo massimo
 input double InpTakeProfitPips       = 0.0;  // Take Profit finale in pips (0 = nessuno)
 input double InpPartialClosePercent  = 50.0; // % di posizione da chiudere al target parziale (0 = disabilitata)
-input double InpPartialTriggerPips   = 15.0; // Pips di profitto per far scattare la chiusura parziale
+input double InpPartialTriggerPips   = 20.0; // Pips di profitto per far scattare la chiusura parziale (20 pips = 200 punti MT5 a 5 decimali)
 
 input group "=== Sicurezza ==="
 input bool   InpEnableTrading        = true; // false = simulazione: calcola i livelli ma non invia ordini reali
