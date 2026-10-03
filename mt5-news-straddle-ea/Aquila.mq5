@@ -22,16 +22,20 @@
 //|      configurabili in pips;                                       |
 //|   4) se un ordine non scatta entro 15 minuti, viene cancellato    |
 //|      (indipendentemente dall'altro);                              |
-//|   5) su ciascuna posizione aperta, se impostata una chiusura      |
-//|      parziale, chiude una percentuale al target indicato e        |
-//|      (opzionale) sposta lo Stop Loss a pareggio sul resto.        |
+//|   5) su ciascuna posizione aperta, il bot insegue il profitto:    |
+//|      appena il profitto tocca InpPartialArmPips il trailing si    |
+//|      "arma", poi chiude la percentuale impostata non appena il    |
+//|      prezzo ritraccia di InpPartialTrailPips dal massimo profitto |
+//|      toccato (non un target fisso: cattura il miglior punto       |
+//|      raggiunto) e (opzionale) sposta lo Stop Loss a pareggio sul  |
+//|      resto.                                                       |
 //|                                                                    |
 //|  Il pannello sul grafico e' di sola lettura: mostra lo stato in   |
 //|  tempo reale e ha 2 pulsanti (Trading ON/OFF, Annulla). Disegna   |
 //|  anche sul grafico il range tracciato e i livelli degli ordini.   |
 //+------------------------------------------------------------------+
 #property copyright "Jarvis"
-#property version   "5.10"
+#property version   "5.11"
 #property strict
 
 #include <Trade\Trade.mqh>
@@ -54,7 +58,8 @@ input double InpStopLossMinPips      = 8.0;  // Stop Loss minimo in pips (proteg
 input double InpStopLossMaxPips      = 20.0; // Stop Loss massimo in pips (0 = nessuno Stop Loss). Il bot lo piazza a meta' del canale pre-notizia, sempre tra questo minimo e questo massimo
 input double InpTakeProfitPips       = 0.0;  // Take Profit finale in pips (0 = nessuno)
 input double InpPartialClosePercent  = 50.0; // % di posizione da chiudere al target parziale (0 = disabilitata)
-input double InpPartialTriggerPips   = 20.0; // Pips di profitto per far scattare la chiusura parziale (20 pips = 200 punti MT5 a 5 decimali)
+input double InpPartialArmPips       = 20.0; // Pips di profitto per "armare" il trailing della chiusura parziale (20 pips = 200 punti MT5 a 5 decimali)
+input double InpPartialTrailPips     = 5.0;  // Pips di ritracciamento dal massimo profitto raggiunto (dopo l'armo) per far scattare la chiusura parziale
 
 input group "=== Sicurezza ==="
 input bool   InpEnableTrading        = true; // false = simulazione: calcola i livelli ma non invia ordini reali
@@ -114,6 +119,8 @@ struct EventInfo
    bool        sellSlippageChecked;
    double      buyPricePlaced;
    double      sellPricePlaced;
+   double      buyPeakPrice;
+   double      sellPeakPrice;
   };
 
 EventInfo g_event;
@@ -145,6 +152,8 @@ void ResetEvent()
    g_event.sellSlippageChecked = false;
    g_event.buyPricePlaced  = 0;
    g_event.sellPricePlaced = 0;
+   g_event.buyPeakPrice    = 0;
+   g_event.sellPeakPrice   = 0;
   }
 
 //+------------------------------------------------------------------+
@@ -469,7 +478,7 @@ bool IsTrackingRange()
 //| perche' senza OCO possono finire aperte entrambe.                 |
 //+------------------------------------------------------------------+
 void ManageLeg(ulong &positionTicket, bool &partialDone, bool &slippageChecked,
-               const double plannedPrice, const bool isBuy)
+               double &peakPrice, const double plannedPrice, const bool isBuy)
   {
    if(positionTicket == 0)
      {
@@ -491,6 +500,7 @@ void ManageLeg(ulong &positionTicket, bool &partialDone, bool &slippageChecked,
          positionTicket  = ticket;
          partialDone     = false;
          slippageChecked = false;
+         peakPrice       = PositionGetDouble(POSITION_PRICE_OPEN);
          PrintFormat("Aquila: %s Stop eseguito.", isBuy ? "Buy" : "Sell");
          break;
         }
@@ -533,9 +543,18 @@ void ManageLeg(ulong &positionTicket, bool &partialDone, bool &slippageChecked,
       long   posType   = PositionGetInteger(POSITION_TYPE);
       double pip       = PipSize();
       double curPrice  = (posType == POSITION_TYPE_BUY) ? SymbolInfoDouble(_Symbol, SYMBOL_BID) : SymbolInfoDouble(_Symbol, SYMBOL_ASK);
-      double profitPips = (posType == POSITION_TYPE_BUY) ? (curPrice - openPrice) / pip : (openPrice - curPrice) / pip;
 
-      if(profitPips >= InpPartialTriggerPips)
+      if(isBuy)
+         peakPrice = MathMax(peakPrice, curPrice);
+      else
+         peakPrice = MathMin(peakPrice, curPrice);
+
+      double peakProfitPips = isBuy ? (peakPrice - openPrice) / pip : (openPrice - peakPrice) / pip;
+      double curProfitPips  = isBuy ? (curPrice  - openPrice) / pip : (openPrice - curPrice)  / pip;
+
+      // il trailing si "arma" solo dopo InpPartialArmPips di profitto raggiunto (sul picco),
+      // poi scatta se il prezzo ritraccia di InpPartialTrailPips dal massimo profitto toccato
+      if(peakProfitPips >= InpPartialArmPips && (peakProfitPips - curProfitPips) >= InpPartialTrailPips)
         {
          double vol      = PositionGetDouble(POSITION_VOLUME);
          double closeVol = NormalizeVolume(vol * InpPartialClosePercent / 100.0);
@@ -545,7 +564,8 @@ void ManageLeg(ulong &positionTicket, bool &partialDone, bool &slippageChecked,
             if(trade.PositionClosePartial(positionTicket, closeVol))
               {
                partialDone = true;
-               PrintFormat("Aquila: chiusura parziale %.1f%% sulla gamba %s eseguita a +%.1f pips.", InpPartialClosePercent, isBuy ? "Buy" : "Sell", profitPips);
+               PrintFormat("Aquila: chiusura parziale %.1f%% sulla gamba %s eseguita a +%.1f pips (picco +%.1f, ritracciamento %.1f).",
+                           InpPartialClosePercent, isBuy ? "Buy" : "Sell", curProfitPips, peakProfitPips, peakProfitPips - curProfitPips);
 
                if(g_moveToBreakeven && PositionSelectByTicket(positionTicket))
                   trade.PositionModify(positionTicket, openPrice, PositionGetDouble(POSITION_TP));
@@ -589,8 +609,8 @@ void ManageArmedEvent()
       UpdateOrders();
      }
 
-   ManageLeg(g_event.buyPositionTicket, g_event.buyPartialDone, g_event.buySlippageChecked, g_event.buyPricePlaced, true);
-   ManageLeg(g_event.sellPositionTicket, g_event.sellPartialDone, g_event.sellSlippageChecked, g_event.sellPricePlaced, false);
+   ManageLeg(g_event.buyPositionTicket, g_event.buyPartialDone, g_event.buySlippageChecked, g_event.buyPeakPrice, g_event.buyPricePlaced, true);
+   ManageLeg(g_event.sellPositionTicket, g_event.sellPartialDone, g_event.sellSlippageChecked, g_event.sellPeakPrice, g_event.sellPricePlaced, false);
 
    bool buyDone  = !OrderStillPending(g_event.buyTicket)  && g_event.buyPositionTicket  == 0;
    bool sellDone = !OrderStillPending(g_event.sellTicket) && g_event.sellPositionTicket == 0;
@@ -812,7 +832,7 @@ void UpdatePanel()
                               InpPipsDistance, InpLotSize, InpStopLossMinPips, InpStopLossMaxPips, InpTakeProfitPips),
                  CLR_STONE);
    PanelSetLabel(g_panelPrefix + "L5", x, y + 5 * PANEL_LINE_H,
-                 StringFormat("Parziale: %.1f%% a %.1fp", InpPartialClosePercent, InpPartialTriggerPips),
+                 StringFormat("Parziale: %.0f%% arm%.0fp trail%.0fp", InpPartialClosePercent, InpPartialArmPips, InpPartialTrailPips),
                  CLR_STONE);
    PanelSetLabel(g_panelPrefix + "L6", x, y + 6 * PANEL_LINE_H,
                  InpMaxSlippagePips > 0 ? StringFormat("Guardia slippage: chiude oltre %.1fp", InpMaxSlippagePips) : "Guardia slippage: disattivata",

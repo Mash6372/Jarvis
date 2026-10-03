@@ -87,11 +87,16 @@ proprietà, il resto lo fa da solo.
    (`InpMaxSlippageUSD` su Aurum), chiude subito quella posizione invece di
    lasciarla con un rischio più alto del previsto — indipendentemente
    dall'altra gamba.
-9. Se una posizione resta aperta e raggiunge il target di
-   `InpPartialTriggerPips`, l'EA chiude automaticamente
-   `InpPartialClosePercent`% di quella posizione e (se il pulsante BE è
-   attivo) sposta lo Stop Loss a pareggio sul resto — di nuovo, in modo
-   indipendente per ciascuna gamba.
+9. Su ciascuna posizione l'EA insegue il profitto con un **trailing**, non
+   un target fisso: appena il profitto tocca `InpPartialArmPips` il
+   trailing si "arma" e da quel momento registra il massimo profitto
+   toccato; se poi il prezzo ritraccia di `InpPartialTrailPips` da quel
+   massimo, chiude automaticamente `InpPartialClosePercent`% della
+   posizione e (se il pulsante BE è attivo) sposta lo Stop Loss a
+   pareggio sul resto — in modo indipendente per ciascuna gamba. Così se
+   il prezzo continua a salire/scendere il bot aspetta, ma appena inverte
+   anche di poco cattura il meglio del movimento invece di aspettare un
+   livello fisso che magari non si ritocca più.
 
 **Per usarlo di nuovo alla prossima notizia:** apri di nuovo le proprietà
 dell'EA (doppio clic sull'EA nel grafico, o clic destro sul grafico →
@@ -186,8 +191,9 @@ management.
 | `InpStopLossMinPips` | Stop Loss minimo in pips: protegge dallo slippage sui canali pre-notizia molto stretti. |
 | `InpStopLossMaxPips` | Stop Loss massimo in pips (0 = nessuno Stop Loss). Il bot lo piazza a metà del canale pre-notizia, sempre compreso tra il minimo e questo massimo. |
 | `InpTakeProfitPips` | Take Profit finale in pips (0 = nessuno). |
-| `InpPartialClosePercent` | % di posizione da chiudere al target parziale (0 = disabilitata). |
-| `InpPartialTriggerPips` | Pips di profitto per far scattare la chiusura parziale (default 20.0, cioè 200 punti MT5 a 5 decimali). |
+| `InpPartialClosePercent` | % di posizione da chiudere quando scatta il trailing (0 = disabilitata). |
+| `InpPartialArmPips` | Pips di profitto per "armare" il trailing della chiusura parziale (default 20.0, cioè 200 punti MT5 a 5 decimali). |
+| `InpPartialTrailPips` | Pips di ritracciamento dal massimo profitto raggiunto (dopo l'armo) per far scattare la chiusura parziale (default 5.0). |
 | `InpEnableTrading` | Stato iniziale del pulsante Trading ON/OFF. |
 | `InpMaxSlippagePips` | Se lo slippage tra prezzo previsto ed eseguito supera questi pips, chiude subito la posizione (0 = disattivato, default 15.0). |
 | `InpPanelX` / `InpPanelY` | Posizione della dashboard sul grafico, in pixel dal bordo sinistro/superiore (default 10/20). |
@@ -196,7 +202,11 @@ management.
 ## Tabella degli input — Aurum (oro)
 
 Stessa logica, stesso pannello (Stop Loss a metà canale, nessun OCO,
-gambe Buy/Sell gestite in modo indipendente). Cambia il modo in cui si esprime la
+gambe Buy/Sell gestite in modo indipendente). **Nota:** la chiusura
+parziale di Aurum usa ancora un target fisso in dollari
+(`InpPartialTriggerUSD`), non il trailing con armo/ritracciamento
+introdotto su Aquila (`InpPartialArmPips`/`InpPartialTrailPips`) — se
+vuoi lo stesso comportamento anche sull'oro va replicato. Cambia il modo in cui si esprime la
 **distanza tra massimo/minimo e prezzo di entrata**: invece di un numero
 fisso, è l'**equivalente in tempo reale di N pips di EURUSD**, ricalcolato
 ogni volta sul prezzo attuale dell'oro. L'EA legge il prezzo di EURUSD e
